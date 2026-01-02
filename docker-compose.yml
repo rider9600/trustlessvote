@@ -1,9 +1,9 @@
-version: "3"
 services:
   backend:
     build: ./backend
     container_name: campus-vote-backend
-    command: npx hardhat compile
+    ports:
+      - "8545:8545"
 
   frontend:
     build: ./frontend

@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:20
 
 WORKDIR /app
 
@@ -7,4 +7,6 @@ RUN npm install
 
 COPY . .
 
-CMD ["npx", "hardhat", "compile"]
+EXPOSE 8545
+
+CMD ["npx", "hardhat", "node"]

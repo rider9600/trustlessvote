@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrustlessVote</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- Load Ethers v6 UMD build; add fallback CDN on error -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"
+      onerror="(function(){var s=document.createElement('script');s.src='https://unpkg.com/ethers@6.10.0/dist/ethers.umd.min.js';document.head.appendChild(s);}())"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <h1 class="title">TrustlessVote</h1>
+      <div class="actions">
+        <button id="connectBtn" class="btn">Connect Wallet</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2 class="panel-title">Network & Contract</h2>
+      <div class="row">
+        <label for="contractAddress">Contract Address</label>
+        <input id="contractAddress" placeholder="0x..." />
+        <button id="saveAddress" class="btn btn-primary">Use Address</button>
+      </div>
+      <div class="row">
+        <button id="connectBtn" class="btn">Connect Wallet (MetaMask)</button>
+        <span class="hint">or use local RPC below (dev only)</span>
+      </div>
+      <div class="row">
+        <label for="pkInput">Private Key (dev)</label>
+        <input id="pkInput" placeholder="0x... (Hardhat account key)" />
+        <button id="rpcConnectBtn" class="btn">Connect via RPC</button>
+      </div>
+      <div class="grid">
+        <div class="stat">
+          <div class="stat-label">Connected</div>
+          <div id="account" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Admin</div>
+          <div id="admin" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Phase</div>
+          <div id="phase" class="stat-value">–</div>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Admin Actions</h2>
+      <div class="row">
+        <label for="voterAddress">Add Voter</label>
+        <input id="voterAddress" placeholder="0x..." />
+        <button id="addVoter" class="btn">Add</button>
+      </div>
+      <button id="nextPhase" class="btn btn-danger">Next Phase</button>
+      <div class="hint">Only the admin can perform these actions.</div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Commit Vote</h2>
+      <div class="row">
+        <label for="commitChoice">Choice</label>
+        <input id="commitChoice" type="number" min="0" step="1" placeholder="e.g. 1" />
+      </div>
+      <div class="row">
+        <label for="commitSecret">Secret</label>
+        <input id="commitSecret" placeholder="your secret" />
+      </div>
+      <button id="commitBtn" class="btn btn-primary">Commit</button>
+      <div class="hint">Commit is available during Commit phase.</div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Reveal Vote</h2>
+      <div class="row">
+        <label for="revealChoice">Choice</label>
+        <input id="revealChoice" type="number" min="0" step="1" placeholder="e.g. 1" />
+      </div>
+      <div class="row">
+        <label for="revealSecret">Secret</label>
+        <input id="revealSecret" placeholder="the same secret used to commit" />
+      </div>
+      <button id="revealBtn" class="btn">Reveal</button>
+      <div class="hint">Reveal is available during Reveal phase.</div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Tallies</h2>
+      <div class="grid">
+        <div class="stat">
+          <div class="stat-label">Choice 0</div>
+          <div id="count0" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Choice 1</div>
+          <div id="count1" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Choice 2</div>
+          <div id="count2" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Choice 3</div>
+          <div id="count3" class="stat-value">0</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
