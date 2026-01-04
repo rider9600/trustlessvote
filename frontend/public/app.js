@@ -46,6 +46,7 @@
   ];
 
   let provider, signer, contract, account;
+  let _connecting = false;
 
   function setStatus(msg, isError=false) {
     statusEl.textContent = msg || '';
@@ -73,12 +74,36 @@
     if (!window.ethereum) {
       throw new Error('MetaMask not found. You can use Local RPC (dev) below.');
     }
-    if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await provider.send('eth_requestAccounts', []);
-    if (!accounts || !accounts[0]) throw new Error('No account returned');
-    account = ethers.getAddress(accounts[0]);
-    signer = await provider.getSigner();
-    accountEl.textContent = account;
+    if (_connecting) {
+      const msg = 'Connection already in progress. Please check your wallet popup.';
+      console.debug('ensureConnection: already connecting');
+      throw new Error(msg);
+    }
+    _connecting = true;
+    try {
+      if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
+      // Check if accounts are already available to avoid duplicate request popups
+      let accounts = await provider.send('eth_accounts', []);
+      if (!accounts || !accounts[0]) {
+        try {
+          await provider.send('eth_requestAccounts', []);
+        } catch (err) {
+          // Map common pending request error to friendlier message
+          if (err && err.code === -32002) {
+            throw new Error('Please accept the connection request in your wallet (MetaMask).');
+          }
+          throw err;
+        }
+        accounts = await provider.send('eth_accounts', []);
+      }
+      if (!accounts || !accounts[0]) throw new Error('No account returned');
+      account = ethers.getAddress(accounts[0]);
+      signer = await provider.getSigner();
+      accountEl.textContent = account;
+      console.debug('ensureConnection: connected', { account });
+    } finally {
+      _connecting = false;
+    }
   }
 
   async function connectViaRpc() {
@@ -93,8 +118,10 @@
       account = await signer.getAddress();
       accountEl.textContent = account;
       setStatus('Connected via RPC.');
+      console.debug('connectViaRpc: connected', { account });
       await loadContract();
     } catch (e) {
+      console.error('connectViaRpc error', e);
       setStatus(e.message || String(e), true);
     }
   }
@@ -155,8 +182,14 @@
   }
 
   function buildCommit(choice, secret) {
-    const enc = ethers.AbiCoder.defaultAbiCoder().encode(['uint256','string'], [choice, secret]);
-    return ethers.keccak256(enc);
+    // Match Solidity's keccak256(abi.encodePacked(choice, secret))
+    // Encode the uint256 as 32-byte ABI (same as encode for a single uint256),
+    // then append the UTF-8 bytes of the secret (packed), then keccak256.
+    const abi = ethers.AbiCoder.defaultAbiCoder();
+    const choiceEncoded = abi.encode(['uint256'], [choice]); // 32-byte hex
+    const secretBytes = ethers.toUtf8Bytes(secret);
+    const packed = ethers.concat([choiceEncoded, secretBytes]);
+    return ethers.keccak256(packed);
   }
 
   async function commitVote() {
@@ -191,15 +224,30 @@
   // Event bindings
   connectBtn.addEventListener('click', async () => {
     try {
+      console.debug('connectBtn clicked');
       await ensureConnection();
       await loadContract();
-    } catch (e) { setStatus(e.message || String(e), true); }
+    } catch (e) {
+      console.error('connectBtn handler error', e);
+      setStatus(e.message || String(e), true);
+    }
   });
 
   saveAddressBtn.addEventListener('click', async () => {
     try {
-      await ensureConnection();
-      await loadContract();
+      // Do not trigger wallet popups from "Use Address" button.
+      // Save the address and only load the contract if a signer/provider is already present.
+      const addr = contractAddressInput.value.trim();
+      if (!addr) throw new Error('Enter a contract address first');
+      saveAddress(addr);
+      if (signer) {
+        console.debug('saveAddress: signer present, loading contract');
+        await loadContract();
+        setStatus('Contract loaded.');
+      } else {
+        console.debug('saveAddress: address saved, no signer yet');
+        setStatus('Address saved. Connect wallet (MetaMask or RPC) to interact.');
+      }
     } catch (e) { setStatus(e.message || String(e), true); }
   });
 
