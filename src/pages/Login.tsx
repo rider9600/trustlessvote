@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { GoogleLogin } from '@react-oauth/google';
+
 
 const DEMO_EMAIL = 'voter@trustless.vote';
 const DEMO_PASSWORD = 'password123';
