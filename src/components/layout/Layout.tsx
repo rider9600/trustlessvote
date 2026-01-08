@@ -9,19 +9,21 @@ interface LayoutProps {
   showStepper?: boolean;
   currentPhase?: ElectionPhase;
   isAdmin?: boolean;
+  minimalNav?: boolean;
 }
 
 export function Layout({ 
   children, 
   showStepper = true, 
   currentPhase = 'commit',
-  isAdmin = true 
+  isAdmin = true,
+  minimalNav = false,
 }: LayoutProps) {
   const phases = getPhases(currentPhase);
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation isAdmin={isAdmin} isConnected={true} />
+      <Navigation isAdmin={isAdmin} isConnected={true} minimal={minimalNav} />
       {showStepper && <ElectionStepper phases={phases} />}
       <main className="container mx-auto px-4 py-8">
         {children}

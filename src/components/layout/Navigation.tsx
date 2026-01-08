@@ -16,9 +16,15 @@ interface NavigationProps {
   isAdmin?: boolean;
   isConnected?: boolean;
   walletAddress?: string;
+  minimal?: boolean;
 }
 
-export function Navigation({ isAdmin = false, isConnected = true, walletAddress = '0x1234...5678' }: NavigationProps) {
+export function Navigation({
+  isAdmin = false,
+  isConnected = true,
+  walletAddress = '0x1234...5678',
+  minimal = false,
+}: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -35,69 +41,73 @@ export function Navigation({ isAdmin = false, isConnected = true, walletAddress 
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === link.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5",
-                  location.pathname === '/admin'
-                    ? "bg-accent/10 text-accent"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <Settings className="w-4 h-4" />
-                Admin
-              </Link>
-            )}
-          </nav>
+          {!minimal && (
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === link.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5",
+                    location.pathname === '/admin'
+                      ? "bg-accent/10 text-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  <Settings className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
+            </nav>
+          )}
 
           {/* Wallet Status & Mobile Menu */}
-          <div className="flex items-center gap-3">
-            {/* Connection Status */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isConnected ? "bg-success" : "bg-muted-foreground"
-              )} />
-              <span className="text-sm text-muted-foreground">
-                {isConnected ? walletAddress : 'Not Connected'}
-              </span>
+          {!minimal && (
+            <div className="flex items-center gap-3">
+              {/* Connection Status */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  isConnected ? "bg-success" : "bg-muted-foreground"
+                )} />
+                <span className="text-sm text-muted-foreground">
+                  {isConnected ? walletAddress : 'Not Connected'}
+                </span>
+              </div>
+
+              {/* User Menu Button */}
+              <Button variant="ghost" size="icon" className="hidden md:flex">
+                <User className="w-5 h-5" />
+              </Button>
+
+              {/* Mobile Menu Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
             </div>
-
-            {/* User Menu Button */}
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <User className="w-5 h-5" />
-            </Button>
-
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
+          )}
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
+        {!minimal && isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-up">
             <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
