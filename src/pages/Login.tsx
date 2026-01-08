@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const DEMO_EMAIL = 'voter@trustless.vote';
-const DEMO_PASSWORD = 'password123';
+const DEMO_PASSWORD = 'c';
 
 export default function LoginPage() {
   const navigate = useNavigate();
