@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: trustlessvote-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm ci && npm run compile
+    startCommand: cd backend && npm start
+    runtime:
+      nodeVersion: 18
+    autoDeploy: true
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://your-frontend-domain.vercel.app,http://localhost:3000
+      - key: AZURE_CLIENT_ID
+        sync: false
+      - key: AZURE_CLIENT_SECRET
+        sync: false
+      - key: AZURE_TENANT_ID
+        value: common
+      - key: BASE_URL
+        # Update after first deploy with actual Render URL
+        value: https://trustlessvote-backend.onrender.com
+      - key: AUTH_REDIRECT_PATH
+        value: /auth/redirect
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_FILES_BUCKET
+        value: uploads
+      - key: SUPABASE_FILES_TABLE
+        value: files
+      - key: SUPABASE_REMINDERS_TABLE
+        value: email_reminders
+      - key: MAIL_SENDER_USER_ID
+        value: "user@your-tenant.onmicrosoft.com"  # or user object id
+
+  - type: cron
+    name: trustlessvote-email-cron
+    schedule: "*/5 * * * *"  # every 5 minutes
+    env: docker
+    image:
+      url: curlimages/curl:8.8.0
+    command: ["-sS", "-X", "POST", "https://trustlessvote-backend.onrender.com/email/process-reminders"]

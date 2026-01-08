@@ -10,3 +10,21 @@ services:
     container_name: campus-vote-frontend
     ports:
       - "3000:3000"
+      
+  mailservice:
+    build: ./mailservice
+    container_name: campus-vote-mailservice
+    ports:
+      - "5000:5000"
+    environment:
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - BASE_URL=http://localhost:5000
+      - AUTH_REDIRECT_PATH=/auth/redirect
+      - CORS_ORIGINS=http://localhost:3000
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-devsecret}
+      - UPLOAD_DIR=/data/uploads
+      - DB_PATH=/app/app.db
+    volumes:
+      - ./data/uploads:/data/uploads

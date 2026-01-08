@@ -64,9 +64,11 @@ Guarantees provided by the contract:
 ## **Tech stack**
 
 - Smart contract: Solidity (0.8.20), Hardhat
-- Frontend: Minimal UI served via Express
+- Frontend: Minimal UI served via Express (deployable to Vercel)
 - Blockchain interaction: Ethers.js
-- Infrastructure: Docker & Docker Compose (optional) for reproducible local setup
+- Infrastructure: Docker & Docker Compose (optional) for reproducible local setup)
+- Backend APIs: Node/Express (Microsoft Auth, Email, Files) ready for Render
+- Storage/DB: Supabase (Storage bucket + Postgres tables)
 
 ---
 
@@ -76,6 +78,7 @@ backend/
 ├── contracts/CampusVote.sol
 ├── scripts/deploy.js
 ├── scripts/testCommitReveal.js
+├── src/server.js (Express API: auth/email/files)
 
 frontend/
 ├── public/index.html
@@ -84,6 +87,7 @@ frontend/
 
 docker-compose.yml
 README.md
+render.yaml (Render blueprint)
 
 ---
 
@@ -153,6 +157,54 @@ An automated test helper is included at `backend/test/TrustlessVote.test.js`.
 
 ---
 
+## **Deploy (Render + Supabase + Vercel)**
+
+1) Supabase
+- Create a new project and get `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+- Create Storage bucket named `uploads`.
+- Create tables (SQL editor):
+	- files:
+		- id text primary key
+		- original_name text
+		- mime_type text
+		- size bigint
+		- path text not null
+		- uploader text
+		- created_at timestamptz default now()
+	- email_reminders:
+		- id bigint primary key generated always as identity
+		- to_address text not null
+		- subject text
+		- body_html text
+		- run_at timestamptz not null
+		- sent_at timestamptz
+		- created_at timestamptz default now()
+
+2) Azure (Entra ID)
+- Register app; record `AZURE_CLIENT_ID`, create `AZURE_CLIENT_SECRET`, set tenant or use `common`.
+- Add Redirect URI (Web): `https://YOUR_RENDER_BACKEND/auth/redirect` and `http://localhost:4000/auth/redirect` for local.
+- API permissions: Microsoft Graph → Delegated → `User.Read`, `Mail.Send` → Grant admin consent.
+ - For scheduled emails (cron), also add Application permission: `Mail.Send` and grant admin consent. Provide `MAIL_SENDER_USER_ID` (UPN or user object id) of the mailbox to send from.
+
+3) Render
+- Use the provided [render.yaml](render.yaml) blueprint.
+- After first deploy, update env `BASE_URL` to the actual Render URL.
+- Configure env vars: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally adjust `CORS_ORIGINS`.
+- The cron job hits `/email/process-reminders` every 5 minutes; you may later move to a service mailbox flow for long-lived email sending.
+ - Set `MAIL_SENDER_USER_ID` for cron-based sends (requires Graph Application permission).
+
+4) Vercel (Frontend)
+- Deploy the `frontend` folder as a static site or small Node app.
+- Set env `VITE_BACKEND_URL` or hardcode backend base in your JS (e.g., `https://YOUR_RENDER_BACKEND`).
+- Add a "Sign in with Microsoft" button linking to `${BACKEND_URL}/auth/login`.
+
+5) Ethereum
+- Choose a network (e.g., Sepolia testnet). Configure RPC via Alchemy/Infura in Hardhat.
+- Deploy contract with Hardhat and set the contract address in the frontend.
+- Users connect with MetaMask to interact on-chain.
+
+---
+
 ## **Planned improvements (Round 2)**
 
 - Student identity verification / federation
@@ -160,6 +212,8 @@ An automated test helper is included at `backend/test/TrustlessVote.test.js`.
 - Better UI/UX and mobile support
 - Deploy to a public testnet and run gas estimates
 - Additional security audits and edge-case handling
+ - Persistent session store (Redis) on Render
+ - Durable scheduled email worker using a queue
 
 ---
 
