@@ -32,6 +32,7 @@ export interface Voter {
   id: string;
   walletAddress: string;
   name: string;
+  email?: string;
   registeredAt: string;
   status: VoterStatus;
   approvedAt?: string;

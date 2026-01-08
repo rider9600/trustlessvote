@@ -1,26 +1,36 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Shield, UserCheck, KeyRound } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
-
-const DEMO_EMAIL = 'voter@trustless.vote';
-const DEMO_PASSWORD = 'password123';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [voterEmail, setVoterEmail] = useState('');
   const [voterPassword, setVoterPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
 
   const handleVoterLogin = () => {
-    if (voterEmail === DEMO_EMAIL && voterPassword === DEMO_PASSWORD) {
-      setError(null);
-      navigate('/voter');
+    // Simple validation (frontend only)
+    if (voterEmail && voterPassword) {
+      toast.success('Voter login successful!');
+      navigate('/');
     } else {
-      setError('Invalid voter credentials. Use voter@trustless.vote / password123 for the demo.');
+      toast.error('Please enter both email and password');
+    }
+  };
+
+  const handleAdminLogin = () => {
+    // Simple validation (frontend only)
+    if (adminEmail && adminPassword) {
+      toast.success('Admin login successful!');
+      navigate('/admin/dashboard');
+    } else {
+      toast.error('Please enter both email and password');
     }
   };
 
@@ -64,6 +74,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={voterPassword}
                   onChange={(e) => setVoterPassword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleVoterLogin()}
                 />
               </div>
 
@@ -78,12 +89,6 @@ export default function LoginPage() {
                   Sign in as Voter
                 </Button>
               </div>
-
-              {error && (
-                <p className="text-xs text-destructive mt-1">
-                  {error}
-                </p>
-              )}
 
               <p className="text-xs text-muted-foreground leading-relaxed">
                 By continuing, you confirm that you are an eligible voter in this election and agree to
@@ -121,6 +126,8 @@ export default function LoginPage() {
                 <Input
                   id="admin-id"
                   placeholder="Enter admin's email address"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
                 />
               </div>
 
@@ -130,11 +137,19 @@ export default function LoginPage() {
                   id="admin-pass"
                   type="password"
                   placeholder="Enter admin's password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
                 />
               </div>
 
               <div className="space-y-3 pt-2">
-                <Button variant="official" size="lg" className="w-full">
+                <Button 
+                  variant="official" 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleAdminLogin}
+                >
                   <KeyRound className="w-4 h-4" />
                   Sign in to Admin Dashboard
                 </Button>
