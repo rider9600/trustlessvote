@@ -60,23 +60,6 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4 mt-4">
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={() => {
-                    toast.success('Signed in with Google');
-                    navigate('/voter');
-                  }}
-                  onError={() => {
-                    toast.error('Google sign-in failed');
-                  }}
-                  useOneTap={false}
-                />
-              </div>
-
-              <div className="relative text-xs text-muted-foreground text-center">
-                <span className="px-2 bg-transparent">or sign in with email</span>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="voter-email">Email address</Label>
                 <Input
