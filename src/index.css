@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* trustlessVote Design System
+   A trust-focused, institutional design language
+   Colors are calm, official, and democratic
+*/
+
+@layer base {
+  :root {
+    /* Core backgrounds - Clean, official whites and greys */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    /* Cards - Subtle elevation */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Navy Blue (Trust, Authority, Stability) */
+    --primary: 222 47% 20%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary - Light slate */
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 20%;
+
+    /* Muted - Soft greys for subtle elements */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - Teal (Verification, Success, Trust) */
+    --accent: 173 58% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive - Calm red for errors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success - Green for completed states */
+    --success: 158 64% 40%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning - Amber for pending/attention */
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
+    /* Phase colors */
+    --phase-upcoming: 215 16% 75%;
+    --phase-active: 217 91% 60%;
+    --phase-completed: 158 64% 40%;
+
+    /* Borders and inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 20%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 47% 25%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 222 47% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 47% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 173 58% 45%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 64% 45%;
+    --success-foreground: 222 47% 11%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 11%;
+
+    --phase-upcoming: 215 16% 40%;
+    --phase-active: 217 91% 60%;
+    --phase-completed: 158 64% 45%;
+
+    --border: 222 47% 20%;
+    --input: 222 47% 20%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Official heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight text-foreground;
+  }
+}
+
+@layer components {
+  /* Phase indicator states */
+  .phase-upcoming {
+    @apply bg-muted text-muted-foreground border-muted;
+  }
+
+  .phase-active {
+    @apply bg-phase-active text-white border-phase-active;
+  }
+
+  .phase-completed {
+    @apply bg-success text-success-foreground border-success;
+  }
+
+  /* Trust badge styling */
+  .trust-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply bg-accent/10 text-accent border border-accent/20;
+  }
+
+  /* Official card styling */
+  .official-card {
+    @apply bg-card rounded-lg border border-border shadow-sm;
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+
+  /* Candidate card */
+  .candidate-card {
+    @apply bg-card rounded-xl border-2 border-border p-6;
+    @apply transition-all duration-200;
+  }
+
+  .candidate-card:hover {
+    @apply border-primary/30 shadow-lg;
+  }
+
+  .candidate-card.selected {
+    @apply border-accent bg-accent/5 shadow-lg;
+  }
+
+  /* Timeline connector */
+  .timeline-connector {
+    @apply h-0.5 flex-1 mx-2;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--phase-completed)) 0%,
+      hsl(var(--phase-active)) 50%,
+      hsl(var(--muted)) 100%
+    );
+  }
+
+  /* Secure action area */
+  .secure-zone {
+    @apply relative overflow-hidden rounded-xl;
+    @apply bg-gradient-to-br from-primary/5 to-accent/5;
+    @apply border border-primary/10;
+  }
+
+  .secure-zone::before {
+    content: '';
+    @apply absolute inset-0 opacity-5;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L35 20H50L38 30L43 45L30 35L17 45L22 30L10 20H25L30 5Z' fill='%23000' fill-opacity='0.1'/%3E%3C/svg%3E");
+    background-size: 60px 60px;
+  }
+}
+
+@layer utilities {
+  /* Smooth fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Subtle pulse for active states */
+  .animate-pulse-subtle {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  /* Scale on hover */
+  .hover-lift {
+    @apply transition-transform duration-200;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+}
