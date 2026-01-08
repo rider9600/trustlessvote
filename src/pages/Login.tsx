@@ -7,20 +7,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
+const DEMO_EMAIL = 'voter@trustless.vote';
+const DEMO_PASSWORD = 'password123';
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [voterEmail, setVoterEmail] = useState('');
   const [voterPassword, setVoterPassword] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
 
   const handleVoterLogin = () => {
-    // Simple validation (frontend only)
-    if (voterEmail && voterPassword) {
-      toast.success('Voter login successful!');
-      navigate('/');
+    if (voterEmail === DEMO_EMAIL && voterPassword === DEMO_PASSWORD) {
+      setError(null);
+      navigate('/voter');
     } else {
-      toast.error('Please enter both email and password');
+      setError('Invalid voter credentials. Use voter@trustless.vote / password123 for the demo.');
     }
   };
 
