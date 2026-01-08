@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Shield, UserCheck, KeyRound } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-
-
-const DEMO_EMAIL = 'voter@trustless.vote';
-const DEMO_PASSWORD = 'password123';
+import { signIn, getCurrentProfile } from '@/services/auth.service';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -17,25 +14,68 @@ export default function LoginPage() {
   const [voterPassword, setVoterPassword] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const handleVoterLogin = async () => {
+    if (!voterEmail || !voterPassword) {
+      toast.error('Please enter both email and password');
+      return;
+    }
 
-  const handleVoterLogin = () => {
-    if (voterEmail === DEMO_EMAIL && voterPassword === DEMO_PASSWORD) {
-      setError(null);
+    setIsLoading(true);
+    try {
+      await signIn(voterEmail, voterPassword);
+      const profile = await getCurrentProfile();
+
+      if (!profile) {
+        toast.error('Profile not found');
+        return;
+      }
+
+      // Allow both voter and admin roles to access the voter portal
+      if (profile.role !== 'voter' && profile.role !== 'admin') {
+        toast.error('This account is not allowed in the voter portal');
+        return;
+      }
+
+      toast.success('Login successful!');
       navigate('/voter');
-    } else {
-      setError('Invalid voter credentials. Use voter@trustless.vote / password123 for the demo.');
+    } catch (error: any) {
+      console.error('Voter login error:', error);
+      toast.error(error.message || 'Invalid credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleAdminLogin = () => {
-    // Simple validation (frontend only)
-    if (adminEmail && adminPassword) {
+  const handleAdminLogin = async () => {
+    if (!adminEmail || !adminPassword) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signIn(adminEmail, adminPassword);
+      const profile = await getCurrentProfile();
+
+      if (!profile) {
+        toast.error('Profile not found');
+        return;
+      }
+
+      if (profile.role !== 'admin') {
+        toast.error('This account is not an admin account');
+        return;
+      }
+
       toast.success('Admin login successful!');
       navigate('/admin/dashboard');
-    } else {
-      toast.error('Please enter both email and password');
+    } catch (error: any) {
+      console.error('Admin login error:', error);
+      toast.error(error.message || 'Invalid credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,9 +129,21 @@ export default function LoginPage() {
                   size="lg"
                   className="w-full sm:w-auto"
                   onClick={handleVoterLogin}
+                  disabled={isLoading}
                 >
                   <Lock className="w-4 h-4" />
-                  Sign in as Voter
+                  {isLoading ? 'Signing in...' : 'Sign in as Voter'}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  asChild
+                >
+                  <Link to="/signup">
+                    Create account
+                  </Link>
                 </Button>
               </div>
 
@@ -102,7 +154,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-6 border-t border-border pt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="relative z-10 mt-6 border-t border-border pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted-foreground">
             <span>Voter login is secured using institutional-grade encryption.</span>
             <span className="hidden sm:inline">Do not share your credentials with anyone.</span>
           </div>
@@ -154,9 +206,10 @@ export default function LoginPage() {
                   size="lg" 
                   className="w-full"
                   onClick={handleAdminLogin}
+                  disabled={isLoading}
                 >
                   <KeyRound className="w-4 h-4" />
-                  Sign in to Admin Dashboard
+                  {isLoading ? 'Signing in...' : 'Sign in to Admin Dashboard'}
                 </Button>
               </div>
             </div>

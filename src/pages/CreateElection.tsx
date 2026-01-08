@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -6,15 +6,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Plus, X, Calendar, Users, Vote, ArrowLeft, Upload, Save
+  Plus, X, Calendar, Users, Vote, ArrowLeft, Upload, Save, Search
 } from 'lucide-react';
-import { AddVoterForm, AddCandidateForm, CreateElectionForm } from '@/types/admin';
-import { Voter, Candidate } from '@/types/election';
+import { AddCandidateForm, CreateElectionForm } from '@/types/admin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { getCurrentProfile, searchProfiles } from '@/services/auth.service';
+import { createElection, createElectionPhase } from '@/services/elections.service';
+import { createCandidate, createManifesto } from '@/services/candidates.service';
+import { addVoterToElection } from '@/services/voters.service';
+import type { Profile } from '@/types/supabase';
 
 export default function CreateElection() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<'details' | 'voters' | 'candidates'>('details');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Election details
   const [electionDetails, setElectionDetails] = useState<CreateElectionForm>({
@@ -26,13 +32,11 @@ export default function CreateElection() {
     revealPhaseEnd: '',
   });
 
-  // Voters
-  const [voters, setVoters] = useState<AddVoterForm[]>([]);
-  const [newVoter, setNewVoter] = useState<AddVoterForm>({
-    name: '',
-    email: '',
-    walletAddress: '',
-  });
+  // Voters (select existing profiles by name)
+  const [selectedVoters, setSelectedVoters] = useState<Profile[]>([]);
+  const [voterSearchTerm, setVoterSearchTerm] = useState('');
+  const [voterSearchResults, setVoterSearchResults] = useState<Profile[]>([]);
+  const [isSearchingVoters, setIsSearchingVoters] = useState(false);
 
   // Candidates
   const [candidates, setCandidates] = useState<AddCandidateForm[]>([]);
@@ -47,16 +51,92 @@ export default function CreateElection() {
     promises: [''],
   });
 
-  const handleAddVoter = () => {
-    if (newVoter.name && newVoter.email && newVoter.walletAddress) {
-      setVoters([...voters, newVoter]);
-      setNewVoter({ name: '', email: '', walletAddress: '' });
+  // Candidate profile search (optional pre-fill from existing voter profiles)
+  const [candidateSearchTerm, setCandidateSearchTerm] = useState('');
+  const [candidateSearchResults, setCandidateSearchResults] = useState<Profile[]>([]);
+  const [isSearchingCandidates, setIsSearchingCandidates] = useState(false);
+
+  const handleRemoveVoter = (index: number) => {
+    setSelectedVoters(selectedVoters.filter((_, i) => i !== index));
+  };
+
+  const handleSelectVoter = (profile: Profile) => {
+    if (selectedVoters.some((v) => v.id === profile.id)) {
+      return;
+    }
+    setSelectedVoters([...selectedVoters, profile]);
+  };
+
+  const handleSearchVoters = async () => {
+    const term = voterSearchTerm.trim();
+    if (!term) {
+      setVoterSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearchingVoters(true);
+      // Allow both voter and admin profiles to be eligible voters
+      const profiles = await searchProfiles(term);
+      const selectedIds = new Set(selectedVoters.map((v) => v.id));
+      setVoterSearchResults(profiles.filter((p) => !selectedIds.has(p.id)));
+    } catch (error: any) {
+      console.error('Error searching voters:', error);
+      toast.error('Failed to search voters');
+    } finally {
+      setIsSearchingVoters(false);
     }
   };
 
-  const handleRemoveVoter = (index: number) => {
-    setVoters(voters.filter((_, i) => i !== index));
+  // Debounced auto-search while typing voter name
+  useEffect(() => {
+    if (!voterSearchTerm.trim()) {
+      setVoterSearchResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      handleSearchVoters();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voterSearchTerm]);
+
+  const handleSearchCandidates = async () => {
+    const term = candidateSearchTerm.trim();
+    if (!term) {
+      setCandidateSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearchingCandidates(true);
+      // Candidates are usually registered users (voters or admins)
+      const profiles = await searchProfiles(term);
+      setCandidateSearchResults(profiles || []);
+    } catch (error: any) {
+      console.error('Error searching candidate profiles:', error);
+      toast.error('Failed to search profiles for candidates');
+    } finally {
+      setIsSearchingCandidates(false);
+    }
   };
+
+  // Debounced auto-search while typing candidate profile name
+  useEffect(() => {
+    if (!candidateSearchTerm.trim()) {
+      setCandidateSearchResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      handleSearchCandidates();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateSearchTerm]);
 
   const handleAddCandidate = () => {
     if (newCandidate.name && newCandidate.party) {
@@ -78,50 +158,88 @@ export default function CreateElection() {
     setCandidates(candidates.filter((_, i) => i !== index));
   };
 
-  const handleCreateElection = () => {
-    // Store in localStorage (simulating backend)
-    const electionId = Date.now().toString();
+  const handleCreateElection = async () => {
+    if (!electionDetails.name) {
+      toast.error('Please enter election name');
+      return;
+    }
+
+    if (!electionDetails.commitPhaseStart || !electionDetails.commitPhaseEnd) {
+      toast.error('Please set commit phase dates');
+      return;
+    }
+
+    setIsSubmitting(true);
     
-    // Convert form voters to proper Voter type
-    const formattedVoters = voters.map((voter, index) => ({
-      id: `voter-${electionId}-${index}`,
-      name: voter.name,
-      email: voter.email,
-      walletAddress: voter.walletAddress,
-      registeredAt: new Date().toISOString(),
-      status: 'pending' as const,
-    }));
+    try {
+      // Get current admin profile
+      const profile = await getCurrentProfile();
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Unauthorized: Admin access required');
+        return;
+      }
 
-    // Convert form candidates to proper Candidate type
-    const formattedCandidates = candidates.map((candidate, index) => ({
-      id: `candidate-${electionId}-${index}`,
-      name: candidate.name,
-      party: candidate.party,
-      symbol: candidate.symbol,
-      photo: candidate.partyLogo || '/placeholder.svg',
-      bio: candidate.bio,
-      manifesto: {
-        vision: candidate.vision,
-        policies: candidate.policies.filter(p => p.trim() !== ''),
-        promises: candidate.promises.filter(p => p.trim() !== ''),
-      },
-    }));
+      // 1. Create election
+      const election = await createElection(
+        profile.id,
+        electionDetails.name,
+        electionDetails.description || null,
+        'upcoming'
+      );
 
-    const newElection = {
-      id: electionId,
-      ...electionDetails,
-      voters: formattedVoters,
-      candidates: formattedCandidates,
-      status: 'upcoming' as const,
-      createdAt: new Date().toISOString(),
-      createdBy: 'admin@trustlessvote.com',
-      currentPhase: 'registration' as const,
-    };
+      // 2. Create election phases
+      await createElectionPhase(
+        election.id,
+        'commit',
+        electionDetails.commitPhaseStart,
+        electionDetails.commitPhaseEnd,
+        false
+      );
 
-    const existingElections = JSON.parse(localStorage.getItem('elections') || '[]');
-    localStorage.setItem('elections', JSON.stringify([...existingElections, newElection]));
-    
-    navigate('/admin/dashboard');
+      if (electionDetails.revealPhaseStart && electionDetails.revealPhaseEnd) {
+        await createElectionPhase(
+          election.id,
+          'reveal',
+          electionDetails.revealPhaseStart,
+          electionDetails.revealPhaseEnd,
+          false
+        );
+      }
+
+      // 3. Add selected existing voters to election
+      for (const voter of selectedVoters) {
+        await addVoterToElection(election.id, voter.id, true);
+      }
+
+      // 4. Create candidates with manifestos
+      for (const candidate of candidates) {
+        const createdCandidate = await createCandidate(
+          election.id,
+          candidate.name,
+          candidate.party,
+          candidate.symbol || null,
+          candidate.partyLogo || null,
+          null, // photo_url
+          candidate.bio || null
+        );
+
+        // Create manifesto for candidate
+        await createManifesto(
+          createdCandidate.id,
+          candidate.vision || null,
+          candidate.policies.filter(p => p.trim() !== ''),
+          candidate.promises.filter(p => p.trim() !== '')
+        );
+      }
+
+      toast.success('Election created successfully! You can now view it on your dashboard.');
+      navigate('/admin/dashboard');
+    } catch (error: any) {
+      console.error('Error creating election:', error);
+      toast.error(error.message || 'Failed to create election');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -248,56 +366,68 @@ export default function CreateElection() {
         {currentStep === 'voters' && (
           <section className="space-y-6 animate-fade-up">
             <div className="official-card p-6 space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">Add Eligible Voters</h2>
-              
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="voterName">Voter Name</Label>
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Add Eligible Voters
+              </h2>
+
+              <p className="text-sm text-muted-foreground">
+                Search existing voter profiles by full name and attach them to this election.
+                Only users who have already signed up as voters will appear here.
+              </p>
+
+              <div className="flex flex-col md:flex-row md:items-end gap-3 pt-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="voterSearch">Voter name</Label>
                   <Input
-                    id="voterName"
-                    placeholder="John Doe"
-                    value={newVoter.name}
-                    onChange={(e) => setNewVoter({ ...newVoter, name: e.target.value })}
+                    id="voterSearch"
+                    placeholder="Start typing a voter name..."
+                    value={voterSearchTerm}
+                    onChange={(e) => setVoterSearchTerm(e.target.value)}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="voterEmail">Email</Label>
-                  <Input
-                    id="voterEmail"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={newVoter.email}
-                    onChange={(e) => setNewVoter({ ...newVoter, email: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="voterWallet">Wallet Address</Label>
-                  <Input
-                    id="voterWallet"
-                    placeholder="0x..."
-                    value={newVoter.walletAddress}
-                    onChange={(e) => setNewVoter({ ...newVoter, walletAddress: e.target.value })}
-                  />
+                <div className="md:w-40 text-xs text-muted-foreground">
+                  {isSearchingVoters ? 'Searching…' : 'Showing up to 5 closest matches'}
                 </div>
               </div>
 
-              <Button variant="outline" onClick={handleAddVoter} className="w-full">
-                <Plus className="w-4 h-4" />
-                Add Voter
-              </Button>
+              {voterSearchResults.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {voterSearchResults.map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">{profile.full_name}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleSelectVoter(profile)}
+                      >
+                        Add to list
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {voterSearchResults.length === 0 && !voterSearchTerm.trim() && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Begin typing to see matching voters by full name.
+                </p>
+              )}
             </div>
 
-            {voters.length > 0 && (
+            {selectedVoters.length > 0 && (
               <div className="official-card p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">Added Voters ({voters.length})</h3>
+                <h3 className="font-semibold text-foreground">Added Voters ({selectedVoters.length})</h3>
                 <div className="space-y-2">
-                  {voters.map((voter, index) => (
+                  {selectedVoters.map((voter, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{voter.name}</p>
-                        <p className="text-sm text-muted-foreground">{voter.email} • {voter.walletAddress}</p>
+                        <p className="font-medium text-foreground">{voter.full_name}</p>
                       </div>
                       <Button
                         variant="ghost"
@@ -336,6 +466,52 @@ export default function CreateElection() {
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4 mt-4">
+                  {/* Optional: pick candidate from existing voter profile */}
+                  <div className="space-y-2">
+                    <Label htmlFor="candidateProfileSearch">Candidate from profiles (optional)</Label>
+                    <Input
+                      id="candidateProfileSearch"
+                      placeholder="Start typing a voter's name to pre-fill candidate details..."
+                      value={candidateSearchTerm}
+                      onChange={(e) => setCandidateSearchTerm(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {isSearchingCandidates
+                        ? 'Searching profiles...'
+                        : 'Showing up to 5 closest voter matches when typing.'}
+                    </p>
+
+                    {candidateSearchResults.length > 0 && (
+                      <div className="space-y-2 pt-1">
+                        {candidateSearchResults.map((profile) => (
+                          <div
+                            key={profile.id}
+                            className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">{profile.full_name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                setNewCandidate({
+                                  ...newCandidate,
+                                  name: profile.full_name,
+                                });
+                                setCandidateSearchTerm('');
+                                setCandidateSearchResults([]);
+                              }}
+                            >
+                              Use as candidate
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="candidateName">Candidate Name *</Label>
@@ -511,10 +687,10 @@ export default function CreateElection() {
                 variant="vote" 
                 size="lg"
                 onClick={handleCreateElection}
-                disabled={!electionDetails.name || voters.length === 0 || candidates.length === 0}
+                disabled={!electionDetails.name || selectedVoters.length === 0 || candidates.length === 0 || isSubmitting}
               >
                 <Save className="w-4 h-4" />
-                Create Election
+                {isSubmitting ? 'Creating Election...' : 'Create Election'}
               </Button>
             </div>
           </section>

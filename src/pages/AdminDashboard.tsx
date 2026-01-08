@@ -4,146 +4,110 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { ElectionConfig } from '@/types/admin';
-import { mockCandidates } from '@/data/mockData';
+import { toast } from 'sonner';
+import { getCurrentProfile } from '@/services/auth.service';
+import { getElectionsByAdmin, getElectionPhases, refreshAdminStats } from '@/services/elections.service';
+import { Election, ElectionPhase } from '@/types/supabase';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [elections, setElections] = useState<ElectionConfig[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [elections, setElections] = useState<Election[]>([]);
+  const [stats, setStats] = useState({
+    upcoming: 0,
+    ongoing: 0,
+    completed: 0,
+    totalVoters: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [adminId, setAdminId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load elections from localStorage
-    const stored = localStorage.getItem('elections');
-    if (stored) {
-      setElections(JSON.parse(stored));
-    } else {
-      // Initialize with sample data
-      const sampleElections: ElectionConfig[] = [
-        {
-          id: '1',
-          name: '2026 Presidential Election',
-          description: 'Upcoming presidential election scheduled for March 2026',
-          status: 'upcoming',
-          createdAt: '2026-01-05',
-          createdBy: 'admin@trustlessvote.com',
-          currentPhase: 'registration',
-          timeframe: {
-            commitPhaseStart: '2026-03-01T00:00',
-            commitPhaseEnd: '2026-03-05T23:59',
-            revealPhaseStart: '2026-03-06T00:00',
-            revealPhaseEnd: '2026-03-10T23:59',
-          },
-          voters: [
-            {
-              id: 'v1',
-              name: 'John Doe',
-              email: 'john@example.com',
-              walletAddress: '0x1234...5678',
-              registeredAt: '2026-01-06',
-              status: 'pending',
-            },
-            {
-              id: 'v2',
-              name: 'Jane Smith',
-              email: 'jane@example.com',
-              walletAddress: '0xabcd...efgh',
-              registeredAt: '2026-01-07',
-              status: 'approved',
-              approvedAt: '2026-01-08',
-            },
-          ],
-          candidates: mockCandidates.map((c, i) => ({
-            ...c,
-            id: `candidate-upcoming-${i}`,
-          })),
-        },
-        {
-          id: '2',
-          name: '2024 General Election',
-          description: 'National general election for all citizens',
-          status: 'ongoing',
-          createdAt: '2024-10-01',
-          createdBy: 'admin@trustlessvote.com',
-          currentPhase: 'commit',
-          timeframe: {
-            commitPhaseStart: '2024-11-01T00:00',
-            commitPhaseEnd: '2024-11-05T23:59',
-            revealPhaseStart: '2024-11-06T00:00',
-            revealPhaseEnd: '2024-11-08T23:59',
-          },
-          voters: [
-            {
-              id: 'v3',
-              name: 'Bob Johnson',
-              email: 'bob@example.com',
-              walletAddress: '0x9876...4321',
-              registeredAt: '2024-10-20',
-              status: 'approved',
-              approvedAt: '2024-10-25',
-            },
-          ],
-          candidates: mockCandidates.map((c, i) => ({
-            ...c,
-            id: `candidate-ongoing-${i}`,
-          })),
-        },
-        {
-          id: '3',
-          name: '2023 Municipal Election',
-          description: 'City council and mayor election',
-          status: 'completed',
-          createdAt: '2023-08-15',
-          createdBy: 'admin@trustlessvote.com',
-          currentPhase: 'results',
-          timeframe: {
-            commitPhaseStart: '2023-10-01T00:00',
-            commitPhaseEnd: '2023-10-15T23:59',
-            revealPhaseStart: '2023-10-16T00:00',
-            revealPhaseEnd: '2023-10-20T23:59',
-          },
-          voters: [
-            {
-              id: 'v4',
-              name: 'Alice Williams',
-              email: 'alice@example.com',
-              walletAddress: '0xfedc...ba98',
-              registeredAt: '2023-09-15',
-              status: 'revealed',
-              approvedAt: '2023-09-20',
-              committedAt: '2023-10-10',
-              revealedAt: '2023-10-17',
-            },
-          ],
-          candidates: mockCandidates.slice(0, 2).map((c, i) => ({
-            ...c,
-            id: `candidate-past-${i}`,
-          })),
-          winnerId: 'candidate-past-0',
-          totalVotes: 2500,
-        }
-      ];
-      localStorage.setItem('elections', JSON.stringify(sampleElections));
-      setElections(sampleElections);
-    }
-  }, [refreshKey]);
-
-  // Refresh on window focus to catch localStorage changes
-  useEffect(() => {
-    const handleFocus = () => {
-      const stored = localStorage.getItem('elections');
-      if (stored) {
-        setElections(JSON.parse(stored));
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    loadAdminData();
   }, []);
+
+  const classifyElectionByTime = (election: Election, phases: ElectionPhase[]): 'upcoming' | 'ongoing' | 'completed' => {
+    if (!phases || phases.length === 0) {
+      return election.status;
+    }
+
+    const now = new Date();
+    const startTimes = phases.map((p) => new Date(p.start_time).getTime());
+    const endTimes = phases.map((p) => new Date(p.end_time).getTime());
+
+    const earliestStart = new Date(Math.min(...startTimes));
+    const latestEnd = new Date(Math.max(...endTimes));
+
+    if (now < earliestStart) return 'upcoming';
+    if (now > latestEnd) return 'completed';
+    return 'ongoing';
+  };
+
+  const loadAdminData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Get current admin profile
+      const profile = await getCurrentProfile();
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Unauthorized access');
+        navigate('/login');
+        return;
+      }
+
+      setAdminId(profile.id);
+
+      // Get elections for this admin
+      const adminElections = await getElectionsByAdmin(profile.id);
+
+      // Derive upcoming/ongoing/completed from phase timings
+      const electionsWithTimeline = await Promise.all(
+        adminElections.map(async (election) => {
+          const phases = await getElectionPhases(election.id);
+          const statusByTime = classifyElectionByTime(election, phases);
+          return { ...election, status: statusByTime } as Election;
+        })
+      );
+
+      setElections(electionsWithTimeline);
+
+      // Calculate stats based on derived status
+      const upcomingCount = electionsWithTimeline.filter((e) => e.status === 'upcoming').length;
+      const ongoingCount = electionsWithTimeline.filter((e) => e.status === 'ongoing').length;
+      const completedCount = electionsWithTimeline.filter((e) => e.status === 'completed').length;
+
+      setStats({
+        upcoming: upcomingCount,
+        ongoing: ongoingCount,
+        completed: completedCount,
+        totalVoters: 0, // Will be calculated from election_voters table if needed
+      });
+
+      // Update admin stats in database
+      await refreshAdminStats(profile.id);
+    } catch (error: any) {
+      console.error('Error loading admin data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const upcomingElections = elections.filter(e => e.status === 'upcoming');
   const ongoingElections = elections.filter(e => e.status === 'ongoing');
   const pastElections = elections.filter(e => e.status === 'completed');
+
+  if (isLoading) {
+    return (
+      <Layout showStepper={false} currentPhase="registration" isAdmin>
+        <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showStepper={false} currentPhase="registration" isAdmin>
@@ -175,7 +139,7 @@ export default function AdminDashboard() {
                 <Calendar className="w-6 h-6 text-warning" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{upcomingElections.length}</p>
+                <p className="text-3xl font-bold text-foreground">{stats.upcoming}</p>
                 <p className="text-sm text-muted-foreground">Upcoming Elections</p>
               </div>
             </div>
@@ -187,7 +151,7 @@ export default function AdminDashboard() {
                 <Clock className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{ongoingElections.length}</p>
+                <p className="text-3xl font-bold text-foreground">{stats.ongoing}</p>
                 <p className="text-sm text-muted-foreground">Ongoing Elections</p>
               </div>
             </div>
@@ -199,7 +163,7 @@ export default function AdminDashboard() {
                 <CheckCircle2 className="w-6 h-6 text-success" />
               </div>
               <div>
-                <p className="text-3xl font-bold text-foreground">{pastElections.length}</p>
+                <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
                 <p className="text-sm text-muted-foreground">Completed Elections</p>
               </div>
             </div>
@@ -273,7 +237,7 @@ export default function AdminDashboard() {
   );
 }
 
-function ElectionCard({ election }: { election: ElectionConfig }) {
+function ElectionCard({ election }: { election: Election }) {
   const navigate = useNavigate();
   
   const statusConfig = {
@@ -295,36 +259,26 @@ function ElectionCard({ election }: { election: ElectionConfig }) {
             </span>
           </div>
           
-          <p className="text-muted-foreground mb-4">{election.description}</p>
+          <p className="text-muted-foreground mb-4">{election.description || 'No description provided'}</p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Created</p>
               <p className="font-medium text-foreground">
-                {new Date(election.createdAt).toLocaleDateString()}
+                {new Date(election.created_at).toLocaleDateString()}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Voters</p>
-              <p className="font-medium text-foreground">{election.voters.length}</p>
+              <p className="text-muted-foreground">Election ID</p>
+              <p className="font-medium text-foreground font-mono text-xs">
+                {election.id.substring(0, 8)}...
+              </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Candidates</p>
-              <p className="font-medium text-foreground">{election.candidates.length}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Phase</p>
-              <p className="font-medium text-foreground capitalize">{election.currentPhase}</p>
+              <p className="text-muted-foreground">Status</p>
+              <p className="font-medium text-foreground capitalize">{election.status}</p>
             </div>
           </div>
-
-          {election.status === 'completed' && election.winnerId && (
-            <div className="mt-4 p-3 bg-success/10 rounded-lg border border-success/20">
-              <p className="text-sm text-success font-medium">
-                Winner: {election.candidates.find(c => c.id === election.winnerId)?.name}
-              </p>
-            </div>
-          )}
         </div>
 
         <Button 
