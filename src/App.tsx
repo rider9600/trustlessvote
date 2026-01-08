@@ -15,7 +15,9 @@ import DebugStorage from "./pages/DebugStorage";
 import ProcessPage from "./pages/Process";
 import LoginPage from "./pages/Login";
 import VoterDashboard from "./pages/VoterDashboard";
+import VoterProfile from "./pages/VoterProfile";
 import NotFound from "./pages/NotFound";
+import VoterElection from "./pages/VoterElection";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/process" element={<ProcessPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/voter" element={<VoterDashboard />} />
+          <Route path="/voter/profile" element={<VoterProfile />} />
+          <Route path="/voter/election/:electionId" element={<VoterElection />} />
           <Route path="/nominees" element={<NomineesPage />} />
           <Route path="/vote" element={<VotePage />} />
           <Route path="/results" element={<ResultsPage />} />

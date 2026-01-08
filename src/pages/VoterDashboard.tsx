@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { demoVoter, mockElections, ElectionTimelineStatus } from '@/data/mockData';
 import { ElectionPhase } from '@/types/election';
+import { Link } from 'react-router-dom';
 
 const phaseLabel: Record<ElectionPhase, string> = {
   registration: 'Registration',
@@ -73,7 +74,11 @@ function ElectionSection({ status }: { status: ElectionTimelineStatus }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {elections.map((election) => (
-          <div key={election.id} className="official-card p-4 flex flex-col justify-between hover-lift">
+          <Link
+            key={election.id}
+            to={`/voter/election/${election.id}`}
+            className="official-card p-4 flex flex-col justify-between hover-lift"
+          >
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 {election.id}
@@ -93,7 +98,7 @@ function ElectionSection({ status }: { status: ElectionTimelineStatus }) {
                 <span>Phase window: {formatRange(election.phaseStart, election.phaseEnd)}</span>
               </p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
@@ -110,7 +115,7 @@ export default function VoterDashboard() {
 
   return (
     <Layout showStepper={false} currentPhase="registration" isAdmin={false}>
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header row with welcome text and right-side actions */}
         <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between animate-fade-up">
           <div className="space-y-2">
@@ -139,8 +144,10 @@ export default function VoterDashboard() {
                   {demoVoter.walletAddress}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" className="text-xs">
-                Manage
+              <Button variant="ghost" size="sm" className="text-xs" asChild>
+                <Link to="/voter/profile">
+                  Manage
+                </Link>
               </Button>
             </div>
 
@@ -165,7 +172,7 @@ export default function VoterDashboard() {
         </section>
 
         {/* Elections sections */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           <ElectionSection status="ongoing" />
           <ElectionSection status="upcoming" />
           <ElectionSection status="past" />

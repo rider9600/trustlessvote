@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Shield, ArrowRight, Lock, Eye, CheckCircle2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import type { ElectionPhase } from '@/types/election';
 
 const steps = [
   {
@@ -56,10 +57,22 @@ const steps = [
   }
 ];
 
-export default function ProcessPage() {
+interface ProcessContentProps {
+  currentPhase?: ElectionPhase;
+  hideCTA?: boolean;
+}
+
+const phaseKeyByLabel: Record<string, ElectionPhase> = {
+  Registration: 'registration',
+  Approval: 'approval',
+  'Commit Vote': 'commit',
+  'Reveal Vote': 'reveal',
+  Results: 'results',
+};
+
+export function ProcessContent({ currentPhase, hideCTA }: ProcessContentProps) {
   return (
-    <Layout currentPhase="commit">
-      <div className="max-w-4xl mx-auto space-y-12">
+    <div className="max-w-4xl mx-auto space-y-12">
         {/* Header */}
         <section className="text-center space-y-4 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
@@ -87,7 +100,11 @@ export default function ProcessPage() {
             >
               <div className="flex items-start gap-5">
                 <div className="flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center border-2" 
+                    style={currentPhase && phaseKeyByLabel[step.phase] === currentPhase 
+                      ? { borderColor: 'hsl(var(--accent))', backgroundColor: 'hsla(var(--accent),0.08)' }
+                      : { borderColor: 'hsl(var(--border))', backgroundColor: 'hsla(var(--primary),0.04)' }
+                  }>
                     <step.icon className="w-7 h-7 text-primary" />
                   </div>
                   {index < steps.length - 1 && (
@@ -100,7 +117,14 @@ export default function ProcessPage() {
                     <span className="text-sm font-medium text-muted-foreground">
                       Phase {index + 1}
                     </span>
-                    <h3 className="text-xl font-semibold text-foreground">{step.phase}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {step.phase}
+                      {currentPhase && phaseKeyByLabel[step.phase] === currentPhase && (
+                        <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                          Current stage
+                        </span>
+                      )}
+                    </h3>
                   </div>
                   
                   <p className="text-muted-foreground mb-4">{step.description}</p>
@@ -159,19 +183,27 @@ export default function ProcessPage() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="text-center space-y-4 animate-fade-up">
-          <p className="text-muted-foreground">
-            Ready to participate in secure, transparent democracy?
-          </p>
-          <Button variant="official" size="lg" asChild>
-            <Link to="/vote">
-              Cast Your Vote
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-          </Button>
-        </section>
+        {!hideCTA && (
+          <section className="text-center space-y-4 animate-fade-up">
+            <p className="text-muted-foreground">
+              Ready to participate in secure, transparent democracy?
+            </p>
+            <Button variant="official" size="lg" asChild>
+              <Link to="/vote">
+                Cast Your Vote
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Link>
+            </Button>
+          </section>
+        )}
       </div>
+  );
+}
+
+export default function ProcessPage() {
+  return (
+    <Layout currentPhase="commit">
+      <ProcessContent />
     </Layout>
   );
 }
