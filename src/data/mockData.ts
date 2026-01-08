@@ -110,6 +110,55 @@ export const mockVoters: Voter[] = [
   }
 ];
 
+// Hardcoded demo voter for login and dashboard
+export const demoVoter: Voter & { email: string } = {
+  id: 'demo-1',
+  name: 'Alex Patel',
+  email: 'voter@trustless.vote',
+  walletAddress: '0xd3m0...v073',
+  registeredAt: '2024-10-20T09:00:00Z',
+  status: 'approved',
+  approvedAt: '2024-10-21T12:15:00Z',
+};
+
+export type ElectionTimelineStatus = 'upcoming' | 'ongoing' | 'past';
+
+export interface ElectionSummary {
+  id: string;
+  name: string;
+  currentPhase: ElectionPhase;
+  phaseStart: string; // ISO date/time
+  phaseEnd: string;   // ISO date/time
+  timelineStatus: ElectionTimelineStatus;
+}
+
+export const mockElections: ElectionSummary[] = [
+  {
+    id: 'el-2026-gen',
+    name: '2026 General Election',
+    currentPhase: 'registration',
+    phaseStart: '2026-02-01T00:00:00Z',
+    phaseEnd: '2026-02-10T23:59:59Z',
+    timelineStatus: 'upcoming',
+  },
+  {
+    id: 'el-2025-local',
+    name: '2025 Local Council Election',
+    currentPhase: 'commit',
+    phaseStart: '2025-12-01T00:00:00Z',
+    phaseEnd: '2025-12-05T23:59:59Z',
+    timelineStatus: 'ongoing',
+  },
+  {
+    id: 'el-2024-gen',
+    name: '2024 General Election',
+    currentPhase: 'results',
+    phaseStart: '2024-11-06T00:00:00Z',
+    phaseEnd: '2024-11-08T18:00:00Z',
+    timelineStatus: 'past',
+  },
+];
+
 export const getPhases = (currentPhase: ElectionPhase): PhaseInfo[] => {
   const phases: ElectionPhase[] = ['registration', 'approval', 'commit', 'reveal', 'results'];
   const currentIndex = phases.indexOf(currentPhase);

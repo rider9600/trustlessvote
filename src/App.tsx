@@ -10,6 +10,7 @@ import ResultsPage from "./pages/Results";
 import AdminPage from "./pages/Admin";
 import ProcessPage from "./pages/Process";
 import LoginPage from "./pages/Login";
+import VoterDashboard from "./pages/VoterDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<HomePage />} />
           <Route path="/process" element={<ProcessPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/voter" element={<VoterDashboard />} />
           <Route path="/nominees" element={<NomineesPage />} />
           <Route path="/vote" element={<VotePage />} />
           <Route path="/results" element={<ResultsPage />} />
