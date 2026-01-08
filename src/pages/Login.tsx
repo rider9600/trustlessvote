@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { GoogleLogin } from '@react-oauth/google';
 
 const DEMO_EMAIL = 'voter@trustless.vote';
-const DEMO_PASSWORD = 'c';
+const DEMO_PASSWORD = 'password123';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -59,6 +60,23 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4 mt-4">
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={() => {
+                    toast.success('Signed in with Google');
+                    navigate('/voter');
+                  }}
+                  onError={() => {
+                    toast.error('Google sign-in failed');
+                  }}
+                  useOneTap={false}
+                />
+              </div>
+
+              <div className="relative text-xs text-muted-foreground text-center">
+                <span className="px-2 bg-transparent">or sign in with email</span>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="voter-email">Email address</Label>
                 <Input

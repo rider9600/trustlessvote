@@ -22,15 +22,16 @@ export function Layout({
   const phases = getPhases(currentPhase);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation isAdmin={isAdmin} isConnected={true} minimal={minimalNav} />
       {showStepper && <ElectionStepper phases={phases} />}
-      <main className="container mx-auto px-4 py-8">
+
+      <main className="container mx-auto px-4 py-8 flex-1 w-full">
         {children}
       </main>
-      
+
       {/* Footer */}
-      <footer className="border-t border-border bg-card mt-auto">
+      <footer className="border-t border-border bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
