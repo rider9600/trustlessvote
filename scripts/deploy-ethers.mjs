@@ -10,7 +10,7 @@ async function main() {
 
   // Hardhat default mnemonic (local dev only)
   const mnemonic = process.env.HARDHAT_MNEMONIC || "test test test test test test test test test test test junk";
-  const wallet = ethers.HDNodeWallet.fromPhrase(mnemonic).derivePath("m/44'/60'/0'/0/0").connect(provider);
+  const wallet = ethers.HDNodeWallet.fromPhrase(mnemonic).connect(provider);
 
   console.log("RPC:", rpcUrl);
   console.log("📝 Deploying from:", await wallet.getAddress());
