@@ -191,7 +191,11 @@ contract TrustlessVote {
     /**
      * @dev Get election stats
      * @param electionId Election UUID
-     * @return admin, phase, totalVoters, totalCommitted, totalRevealed
+     * @return admin Election admin address
+     * @return phase Current election phase
+     * @return totalVoters Total eligible voters
+     * @return totalCommitted Total committed votes
+     * @return totalRevealed Total revealed votes
      */
     function getElectionStats(string memory electionId) 
         external 
