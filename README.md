@@ -4,6 +4,16 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+## Local development (Docker)
+
+Bring up the full local stack (frontend + local chain + local Supabase-like backend) with:
+
+```sh
+docker compose up -d --build
+```
+
+Details and default seeded accounts are in [DOCKER_DEV.md](DOCKER_DEV.md).
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

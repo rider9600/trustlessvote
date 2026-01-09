@@ -1,19 +1,20 @@
-import hre from "hardhat";
+/* CommonJS deploy script to avoid ESM/HRE interop issues */
+const hre = require("hardhat");
 
 async function main() {
   const { ethers, network } = hre;
 
   console.log("🚀 Deploying TrustlessVote contract...\n");
 
-  const networkName = network?.name ?? "unknown";
+  const networkName = (network && network.name) || "unknown";
   console.log("Network:", networkName);
-  if (network?.config?.url) console.log("RPC:", network.config.url);
+  if (network && network.config && network.config.url) console.log("RPC:", network.config.url);
 
   const [deployer] = await ethers.getSigners();
   console.log("📝 Deploying from account:", deployer.address);
 
-  const provider = deployer.provider ?? (network?.config?.url ? new ethers.JsonRpcProvider(network.config.url) : undefined);
-  const balance = await (provider ?? ethers.provider).getBalance(deployer.address);
+  const provider = deployer.provider || (network && network.config && network.config.url ? new ethers.JsonRpcProvider(network.config.url) : undefined);
+  const balance = await (provider || ethers.provider).getBalance(deployer.address);
   console.log("💰 Account balance:", ethers.formatEther(balance), "ETH\n");
 
   const TrustlessVote = await ethers.getContractFactory("TrustlessVote", deployer);
@@ -28,9 +29,9 @@ async function main() {
   console.log("━".repeat(60));
   console.log("📋 Contract Address:", address);
   console.log("━".repeat(60));
-  // Attempt to write into .env.docker (local dev via Docker compose)
+
   try {
-    const fs = await import("fs");
+    const fs = require("fs");
     const path = ".env.docker";
     if (fs.existsSync(path)) {
       let txt = fs.readFileSync(path, "utf8");
@@ -45,7 +46,7 @@ async function main() {
       console.log("\nℹ️ .env.docker not found. Please set VITE_CONTRACT_ADDRESS manually.");
     }
   } catch (e) {
-    console.log("\n⚠️ Could not update .env.docker:", e?.message || e);
+    console.log("\n⚠️ Could not update .env.docker:", (e && e.message) || e);
   }
 
   console.log("\nYou can now start the frontend:");
