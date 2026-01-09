@@ -1,165 +1,73 @@
-# **TrustlessVote**
+# Welcome to your Lovable project
 
-**A Trustless Commit–Reveal Voting System for College Campuses**
+## Project info
 
-TrustlessVote is a working Web3 prototype that demonstrates how college elections and polls can be made fair, private, and verifiable using blockchain. It replaces centralized tools (for example, Google Forms) with on‑chain rule enforcement using a commit–reveal voting mechanism.
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
----
+## How can I edit this code?
 
-## **Problem**
+There are several ways of editing your application.
 
-Current campus election systems often rely on centralized services. That introduces several issues:
+**Use Lovable**
 
-- Votes stored in private databases
-- Administrators can modify or delete responses
-- Results cannot be independently verified
-- Voters must trust the platform or organizer
+Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-For sensitive processes like voting, these weaknesses create a trust gap.
+Changes made via Lovable will be committed automatically to this repo.
 
----
+**Use your preferred IDE**
 
-## **Our idea**
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-TrustlessVote enforces election rules with a smart contract instead of a central operator. Key properties:
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-- Eligible voters are registered on‑chain
-- Votes are hidden (committed) during the voting window
-- Votes are revealed later and counted on‑chain
-- Final tallies are immutable and publicly verifiable
+Follow these steps:
 
-Once deployed, the admin cannot tamper with committed votes or final results.
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
----
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-## **Why Web3?**
+# Step 3: Install the necessary dependencies.
+npm i
 
-Short comparison:
-
-- Web2: database owner controls data; transparency depends on trust; auditing requires permissions.
-- Web3: votes and rules live on‑chain; data immutability and public verifiability remove the need to trust a single party.
-
-Blockchain gives cryptographic guarantees that are difficult or impossible to replicate with a centralized Web2-only system.
-
----
-
-## **Core component (Round 1)**
-
-The core implemented piece is the `TrustlessVote` smart contract implementing a phased commit–reveal voting flow:
-
-- **Register** — admin registers eligible voters
-- **Commit** — voters submit a hashed vote (choice + secret)
-- **Reveal** — voters reveal their choice + secret; contract verifies and updates tally
-- **End** — voting finalized
-
-Guarantees provided by the contract:
-
-- One eligible voter → one vote
-- Vote privacy until reveal phase
-- No vote modification after submission
-- On‑chain, tamper‑proof tallying
-
----
-
-## **Tech stack**
-
-- Smart contract: Solidity (0.8.20), Hardhat
-- Frontend: Minimal UI served via Express
-- Blockchain interaction: Ethers.js
-- Infrastructure: Docker & Docker Compose (optional) for reproducible local setup
-
----
-
-## **Project structure**
-
-backend/
-├── contracts/CampusVote.sol
-├── scripts/deploy.js
-├── scripts/testCommitReveal.js
-
-frontend/
-├── public/index.html
-├── public/app.js
-├── public/styles.css
-
-docker-compose.yml
-README.md
-
----
-
-## **Quick start (recommended: Docker)**
-
-**Prerequisites**: Docker, Docker Compose
-
-```bash
-docker compose build
-docker compose up
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-- Frontend: http://localhost:3000
-- Local Hardhat node (if used): http://localhost:8545
+**Edit a file directly in GitHub**
 
----
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## **Quick start (local, no Docker)**
+**Use GitHub Codespaces**
 
-**Prerequisites**: Node.js (16+), npm
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-1. Start a Hardhat node and deploy
+## What technologies are used for this project?
 
-```bash
-cd backend
-npm install
-npx hardhat node
-# in a second terminal:
-npx hardhat run scripts/deploy.js --network localhost
-```
+This project is built with:
 
-2. Start the frontend
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-```bash
-cd frontend
-npm install
-node server.js
-# open http://localhost:3000
-```
+## How can I deploy this project?
 
-3. Use the UI
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
-- Paste the deployed contract address into the **Contract Address** field and click **Use Address**.
-- Connect with MetaMask or use **Connect via RPC** with a Hardhat private key (RPC: `http://localhost:8545`).
+## Can I connect a custom domain to my Lovable project?
 
----
+Yes, you can!
 
-## **Testing the flow (manual)**
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-1. Deploy the contract on the local Hardhat network (`deploy.js`) and copy the address.
-2. Open the frontend and paste the address.
-3. As admin: register voters and click **Next Phase** to move to Commit.
-4. As voter: commit (Choice + Secret).
-5. Admin moves to Reveal; voters reveal with the same Choice + Secret.
-6. Verify tallies update on‑chain.
-
-An automated test helper is included at `backend/test/TrustlessVote.test.js`.
-
----
-
-## **Current status (Round 1)**
-
-- Core smart contract implemented and unit tested
-- End‑to‑end commit → reveal flow verified
-- Frontend interacts with the contract for demo purposes
-- Dockerized setup for easy reproduction
-
----
-
-## **Planned improvements (Round 2)**
-
-- Student identity verification / federation
-- Support for multiple concurrent elections
-- Better UI/UX and mobile support
-- Deploy to a public testnet and run gas estimates
-- Additional security audits and edge-case handling
-
----
-
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
