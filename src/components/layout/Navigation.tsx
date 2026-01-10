@@ -1,6 +1,6 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, LogOut, Shield, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, LogOut, Shield, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   // props kept for compatibility but currently unused
@@ -14,9 +14,12 @@ export function Navigation({ isAdmin, minimal }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isLoginRoute = location.pathname === '/login';
-  const isRootRoute = location.pathname === '/';
-  const effectiveIsAdmin = typeof isAdmin === 'boolean' ? isAdmin : location.pathname.startsWith('/admin');
+  const isLoginRoute = location.pathname === "/login";
+  const isRootRoute = location.pathname === "/";
+  const effectiveIsAdmin =
+    typeof isAdmin === "boolean"
+      ? isAdmin
+      : location.pathname.startsWith("/admin");
 
   const showControls = !minimal && !isLoginRoute;
   const showBack = showControls && !isRootRoute;
@@ -26,11 +29,11 @@ export function Navigation({ isAdmin, minimal }: NavigationProps) {
       navigate(-1);
       return;
     }
-    navigate(effectiveIsAdmin ? '/admin/dashboard' : '/voter');
+    navigate(effectiveIsAdmin ? "/admin/dashboard" : "/voter");
   };
 
   const handleLogout = () => {
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -54,7 +57,9 @@ export function Navigation({ isAdmin, minimal }: NavigationProps) {
               <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center group-hover:bg-primary/90 transition-colors">
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-lg text-foreground">trustlessVote</span>
+              <span className="font-semibold text-lg text-foreground">
+                trustlessVote
+              </span>
             </Link>
           </div>
 
@@ -62,7 +67,7 @@ export function Navigation({ isAdmin, minimal }: NavigationProps) {
             <div className="flex items-center gap-2">
               <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-xs text-muted-foreground">
                 <User className="w-3 h-3" />
-                <span>{effectiveIsAdmin ? 'Admin' : 'Voter'} session</span>
+                <span>{effectiveIsAdmin ? "Admin" : "Voter"} session</span>
               </div>
               <Button
                 variant="ghost"
