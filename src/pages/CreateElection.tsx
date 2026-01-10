@@ -1,59 +1,78 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Plus, X, Calendar, Users, Vote, ArrowLeft, Upload, Save, Search
-} from 'lucide-react';
-import { AddCandidateForm, CreateElectionForm } from '@/types/admin';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { getCurrentProfile, searchProfiles } from '@/services/auth.service';
-import { createElection, createElectionPhase } from '@/services/elections.service';
-import { createCandidate, createManifesto } from '@/services/candidates.service';
-import { addVoterToElection } from '@/services/voters.service';
-import type { Profile } from '@/types/supabase';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Layout } from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Plus,
+  X,
+  Calendar,
+  Users,
+  Vote,
+  ArrowLeft,
+  Upload,
+  Save,
+  Search,
+} from "lucide-react";
+import { AddCandidateForm, CreateElectionForm } from "@/types/admin";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { getCurrentProfile, searchProfiles } from "@/services/auth.service";
+import {
+  createElection,
+  createElectionPhase,
+} from "@/services/elections.service";
+import {
+  createCandidate,
+  createManifesto,
+} from "@/services/candidates.service";
+import { addVoterToElection } from "@/services/voters.service";
+import type { Profile } from "@/types/supabase";
+import { relay } from "@/lib/relay";
 
 export default function CreateElection() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<'details' | 'voters' | 'candidates'>('details');
+  const [currentStep, setCurrentStep] = useState<
+    "details" | "voters" | "candidates"
+  >("details");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Election details
   const [electionDetails, setElectionDetails] = useState<CreateElectionForm>({
-    name: '',
-    description: '',
-    commitPhaseStart: '',
-    commitPhaseEnd: '',
-    revealPhaseStart: '',
-    revealPhaseEnd: '',
+    name: "",
+    description: "",
+    commitPhaseStart: "",
+    commitPhaseEnd: "",
+    revealPhaseStart: "",
+    revealPhaseEnd: "",
   });
 
   // Voters (select existing profiles by name)
   const [selectedVoters, setSelectedVoters] = useState<Profile[]>([]);
-  const [voterSearchTerm, setVoterSearchTerm] = useState('');
+  const [voterSearchTerm, setVoterSearchTerm] = useState("");
   const [voterSearchResults, setVoterSearchResults] = useState<Profile[]>([]);
   const [isSearchingVoters, setIsSearchingVoters] = useState(false);
 
   // Candidates
   const [candidates, setCandidates] = useState<AddCandidateForm[]>([]);
   const [newCandidate, setNewCandidate] = useState<AddCandidateForm>({
-    name: '',
-    party: '',
-    symbol: '',
-    partyLogo: '',
-    bio: '',
-    vision: '',
-    policies: [''],
-    promises: [''],
+    name: "",
+    party: "",
+    symbol: "",
+    partyLogo: "",
+    bio: "",
+    vision: "",
+    policies: [""],
+    promises: [""],
   });
 
   // Candidate profile search (optional pre-fill from existing voter profiles)
-  const [candidateSearchTerm, setCandidateSearchTerm] = useState('');
-  const [candidateSearchResults, setCandidateSearchResults] = useState<Profile[]>([]);
+  const [candidateSearchTerm, setCandidateSearchTerm] = useState("");
+  const [candidateSearchResults, setCandidateSearchResults] = useState<
+    Profile[]
+  >([]);
   const [isSearchingCandidates, setIsSearchingCandidates] = useState(false);
 
   const handleRemoveVoter = (index: number) => {
@@ -81,8 +100,8 @@ export default function CreateElection() {
       const selectedIds = new Set(selectedVoters.map((v) => v.id));
       setVoterSearchResults(profiles.filter((p) => !selectedIds.has(p.id)));
     } catch (error: any) {
-      console.error('Error searching voters:', error);
-      toast.error('Failed to search voters');
+      console.error("Error searching voters:", error);
+      toast.error("Failed to search voters");
     } finally {
       setIsSearchingVoters(false);
     }
@@ -116,8 +135,8 @@ export default function CreateElection() {
       const profiles = await searchProfiles(term);
       setCandidateSearchResults(profiles || []);
     } catch (error: any) {
-      console.error('Error searching candidate profiles:', error);
-      toast.error('Failed to search profiles for candidates');
+      console.error("Error searching candidate profiles:", error);
+      toast.error("Failed to search profiles for candidates");
     } finally {
       setIsSearchingCandidates(false);
     }
@@ -142,14 +161,14 @@ export default function CreateElection() {
     if (newCandidate.name && newCandidate.party) {
       setCandidates([...candidates, newCandidate]);
       setNewCandidate({
-        name: '',
-        party: '',
-        symbol: '',
-        partyLogo: '',
-        bio: '',
-        vision: '',
-        policies: [''],
-        promises: [''],
+        name: "",
+        party: "",
+        symbol: "",
+        partyLogo: "",
+        bio: "",
+        vision: "",
+        policies: [""],
+        promises: [""],
       });
     }
   };
@@ -160,22 +179,22 @@ export default function CreateElection() {
 
   const handleCreateElection = async () => {
     if (!electionDetails.name) {
-      toast.error('Please enter election name');
+      toast.error("Please enter election name");
       return;
     }
 
     if (!electionDetails.commitPhaseStart || !electionDetails.commitPhaseEnd) {
-      toast.error('Please set commit phase dates');
+      toast.error("Please set commit phase dates");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Get current admin profile
       const profile = await getCurrentProfile();
-      if (!profile || profile.role !== 'admin') {
-        toast.error('Unauthorized: Admin access required');
+      if (!profile || profile.role !== "admin") {
+        toast.error("Unauthorized: Admin access required");
         return;
       }
 
@@ -184,13 +203,13 @@ export default function CreateElection() {
         profile.id,
         electionDetails.name,
         electionDetails.description || null,
-        'upcoming'
+        "upcoming"
       );
 
       // 2. Create election phases
       await createElectionPhase(
         election.id,
-        'commit',
+        "commit",
         electionDetails.commitPhaseStart,
         electionDetails.commitPhaseEnd,
         false
@@ -199,14 +218,14 @@ export default function CreateElection() {
       if (electionDetails.revealPhaseStart && electionDetails.revealPhaseEnd) {
         await createElectionPhase(
           election.id,
-          'reveal',
+          "reveal",
           electionDetails.revealPhaseStart,
           electionDetails.revealPhaseEnd,
           false
         );
       }
 
-      // 3. Add selected existing voters to election
+      // 3. Add selected existing voters to election (Supabase)
       for (const voter of selectedVoters) {
         await addVoterToElection(election.id, voter.id, true);
       }
@@ -227,16 +246,33 @@ export default function CreateElection() {
         await createManifesto(
           createdCandidate.id,
           candidate.vision || null,
-          candidate.policies.filter(p => p.trim() !== ''),
-          candidate.promises.filter(p => p.trim() !== '')
+          candidate.policies.filter((p) => p.trim() !== ""),
+          candidate.promises.filter((p) => p.trim() !== "")
         );
       }
 
-      toast.success('Election created successfully! You can now view it on your dashboard.');
-      navigate('/admin/dashboard');
+      // 5. On-chain: ensure contract is deployed, create election, add voters
+      try {
+        await relay.ensureDeployed();
+        await relay.createElection(election.id);
+        if (selectedVoters.length > 0) {
+          await relay.addVotersByProfiles(
+            election.id,
+            selectedVoters.map((v) => v.id)
+          );
+        }
+      } catch (chainErr: any) {
+        console.warn(
+          "On-chain actions failed (continuing):",
+          chainErr?.message || chainErr
+        );
+      }
+
+      toast.success("Election created successfully! On-chain sync attempted.");
+      navigate("/admin/dashboard");
     } catch (error: any) {
-      console.error('Error creating election:', error);
-      toast.error(error.message || 'Failed to create election');
+      console.error("Error creating election:", error);
+      toast.error(error.message || "Failed to create election");
     } finally {
       setIsSubmitting(false);
     }
@@ -247,11 +283,17 @@ export default function CreateElection() {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <section className="flex items-center gap-4 animate-fade-up">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/admin/dashboard")}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground">Create New Election</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              Create New Election
+            </h1>
             <p className="text-muted-foreground mt-1">
               Set up election details, add voters and candidates
             </p>
@@ -259,20 +301,23 @@ export default function CreateElection() {
         </section>
 
         {/* Progress Steps */}
-        <section className="official-card p-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
+        <section
+          className="official-card p-6 animate-fade-up"
+          style={{ animationDelay: "100ms" }}
+        >
           <div className="flex items-center justify-between">
             {[
-              { id: 'details', label: 'Election Details', icon: Calendar },
-              { id: 'voters', label: 'Add Voters', icon: Users },
-              { id: 'candidates', label: 'Add Candidates', icon: Vote }
+              { id: "details", label: "Election Details", icon: Calendar },
+              { id: "voters", label: "Add Voters", icon: Users },
+              { id: "candidates", label: "Add Candidates", icon: Vote },
             ].map((step, index) => (
               <div key={step.id} className="flex items-center flex-1">
                 <button
                   onClick={() => setCurrentStep(step.id as typeof currentStep)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     currentStep === step.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted'
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   <step.icon className="w-4 h-4" />
@@ -285,10 +330,12 @@ export default function CreateElection() {
         </section>
 
         {/* Election Details Form */}
-        {currentStep === 'details' && (
+        {currentStep === "details" && (
           <section className="official-card p-6 space-y-6 animate-fade-up">
-            <h2 className="text-xl font-semibold text-foreground">Election Information</h2>
-            
+            <h2 className="text-xl font-semibold text-foreground">
+              Election Information
+            </h2>
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Election Name *</Label>
@@ -296,7 +343,12 @@ export default function CreateElection() {
                   id="name"
                   placeholder="e.g., 2026 General Election"
                   value={electionDetails.name}
-                  onChange={(e) => setElectionDetails({ ...electionDetails, name: e.target.value })}
+                  onChange={(e) =>
+                    setElectionDetails({
+                      ...electionDetails,
+                      name: e.target.value,
+                    })
+                  }
                 />
               </div>
 
@@ -306,7 +358,12 @@ export default function CreateElection() {
                   id="description"
                   placeholder="Brief description of the election..."
                   value={electionDetails.description}
-                  onChange={(e) => setElectionDetails({ ...electionDetails, description: e.target.value })}
+                  onChange={(e) =>
+                    setElectionDetails({
+                      ...electionDetails,
+                      description: e.target.value,
+                    })
+                  }
                   rows={3}
                 />
               </div>
@@ -318,7 +375,12 @@ export default function CreateElection() {
                     id="commitStart"
                     type="datetime-local"
                     value={electionDetails.commitPhaseStart}
-                    onChange={(e) => setElectionDetails({ ...electionDetails, commitPhaseStart: e.target.value })}
+                    onChange={(e) =>
+                      setElectionDetails({
+                        ...electionDetails,
+                        commitPhaseStart: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -328,7 +390,12 @@ export default function CreateElection() {
                     id="commitEnd"
                     type="datetime-local"
                     value={electionDetails.commitPhaseEnd}
-                    onChange={(e) => setElectionDetails({ ...electionDetails, commitPhaseEnd: e.target.value })}
+                    onChange={(e) =>
+                      setElectionDetails({
+                        ...electionDetails,
+                        commitPhaseEnd: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -338,7 +405,12 @@ export default function CreateElection() {
                     id="revealStart"
                     type="datetime-local"
                     value={electionDetails.revealPhaseStart}
-                    onChange={(e) => setElectionDetails({ ...electionDetails, revealPhaseStart: e.target.value })}
+                    onChange={(e) =>
+                      setElectionDetails({
+                        ...electionDetails,
+                        revealPhaseStart: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -348,14 +420,22 @@ export default function CreateElection() {
                     id="revealEnd"
                     type="datetime-local"
                     value={electionDetails.revealPhaseEnd}
-                    onChange={(e) => setElectionDetails({ ...electionDetails, revealPhaseEnd: e.target.value })}
+                    onChange={(e) =>
+                      setElectionDetails({
+                        ...electionDetails,
+                        revealPhaseEnd: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end">
-              <Button variant="official" onClick={() => setCurrentStep('voters')}>
+              <Button
+                variant="official"
+                onClick={() => setCurrentStep("voters")}
+              >
                 Next: Add Voters
               </Button>
             </div>
@@ -363,7 +443,7 @@ export default function CreateElection() {
         )}
 
         {/* Add Voters Form */}
-        {currentStep === 'voters' && (
+        {currentStep === "voters" && (
           <section className="space-y-6 animate-fade-up">
             <div className="official-card p-6 space-y-4">
               <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
@@ -372,8 +452,9 @@ export default function CreateElection() {
               </h2>
 
               <p className="text-sm text-muted-foreground">
-                Search existing voter profiles by full name and attach them to this election.
-                Only users who have already signed up as voters will appear here.
+                Search existing voter profiles by full name and attach them to
+                this election. Only users who have already signed up as voters
+                will appear here.
               </p>
 
               <div className="flex flex-col md:flex-row md:items-end gap-3 pt-2">
@@ -387,7 +468,9 @@ export default function CreateElection() {
                   />
                 </div>
                 <div className="md:w-40 text-xs text-muted-foreground">
-                  {isSearchingVoters ? 'Searching…' : 'Showing up to 5 closest matches'}
+                  {isSearchingVoters
+                    ? "Searching…"
+                    : "Showing up to 5 closest matches"}
                 </div>
               </div>
 
@@ -399,7 +482,9 @@ export default function CreateElection() {
                       className="flex items-center justify-between p-3 bg-muted rounded-lg"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{profile.full_name}</p>
+                        <p className="font-medium text-foreground truncate">
+                          {profile.full_name}
+                        </p>
                       </div>
                       <Button
                         type="button"
@@ -422,12 +507,19 @@ export default function CreateElection() {
 
             {selectedVoters.length > 0 && (
               <div className="official-card p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">Added Voters ({selectedVoters.length})</h3>
+                <h3 className="font-semibold text-foreground">
+                  Added Voters ({selectedVoters.length})
+                </h3>
                 <div className="space-y-2">
                   {selectedVoters.map((voter, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                    >
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{voter.full_name}</p>
+                        <p className="font-medium text-foreground">
+                          {voter.full_name}
+                        </p>
                       </div>
                       <Button
                         variant="ghost"
@@ -443,10 +535,16 @@ export default function CreateElection() {
             )}
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep('details')}>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep("details")}
+              >
                 Back
               </Button>
-              <Button variant="official" onClick={() => setCurrentStep('candidates')}>
+              <Button
+                variant="official"
+                onClick={() => setCurrentStep("candidates")}
+              >
                 Next: Add Candidates
               </Button>
             </div>
@@ -454,11 +552,13 @@ export default function CreateElection() {
         )}
 
         {/* Add Candidates Form */}
-        {currentStep === 'candidates' && (
+        {currentStep === "candidates" && (
           <section className="space-y-6 animate-fade-up">
             <div className="official-card p-6 space-y-6">
-              <h2 className="text-xl font-semibold text-foreground">Add Candidates</h2>
-              
+              <h2 className="text-xl font-semibold text-foreground">
+                Add Candidates
+              </h2>
+
               <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -468,7 +568,9 @@ export default function CreateElection() {
                 <TabsContent value="basic" className="space-y-4 mt-4">
                   {/* Optional: pick candidate from existing voter profile */}
                   <div className="space-y-2">
-                    <Label htmlFor="candidateProfileSearch">Candidate from profiles (optional)</Label>
+                    <Label htmlFor="candidateProfileSearch">
+                      Candidate from profiles (optional)
+                    </Label>
                     <Input
                       id="candidateProfileSearch"
                       placeholder="Start typing a voter's name to pre-fill candidate details..."
@@ -477,8 +579,8 @@ export default function CreateElection() {
                     />
                     <p className="text-xs text-muted-foreground">
                       {isSearchingCandidates
-                        ? 'Searching profiles...'
-                        : 'Showing up to 5 closest voter matches when typing.'}
+                        ? "Searching profiles..."
+                        : "Showing up to 5 closest voter matches when typing."}
                     </p>
 
                     {candidateSearchResults.length > 0 && (
@@ -489,8 +591,12 @@ export default function CreateElection() {
                             className="flex items-center justify-between p-3 bg-muted rounded-lg"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">{profile.full_name}</p>
-                              <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
+                              <p className="font-medium text-foreground truncate">
+                                {profile.full_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {profile.email}
+                              </p>
                             </div>
                             <Button
                               type="button"
@@ -500,7 +606,7 @@ export default function CreateElection() {
                                   ...newCandidate,
                                   name: profile.full_name,
                                 });
-                                setCandidateSearchTerm('');
+                                setCandidateSearchTerm("");
                                 setCandidateSearchResults([]);
                               }}
                             >
@@ -519,7 +625,12 @@ export default function CreateElection() {
                         id="candidateName"
                         placeholder="Sarah Mitchell"
                         value={newCandidate.name}
-                        onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewCandidate({
+                            ...newCandidate,
+                            name: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
@@ -529,7 +640,12 @@ export default function CreateElection() {
                         id="party"
                         placeholder="Progressive Alliance"
                         value={newCandidate.party}
-                        onChange={(e) => setNewCandidate({ ...newCandidate, party: e.target.value })}
+                        onChange={(e) =>
+                          setNewCandidate({
+                            ...newCandidate,
+                            party: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
@@ -539,7 +655,12 @@ export default function CreateElection() {
                         id="symbol"
                         placeholder="🌿 or emoji"
                         value={newCandidate.symbol}
-                        onChange={(e) => setNewCandidate({ ...newCandidate, symbol: e.target.value })}
+                        onChange={(e) =>
+                          setNewCandidate({
+                            ...newCandidate,
+                            symbol: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
@@ -550,7 +671,12 @@ export default function CreateElection() {
                           id="logo"
                           placeholder="https://example.com/logo.png"
                           value={newCandidate.partyLogo}
-                          onChange={(e) => setNewCandidate({ ...newCandidate, partyLogo: e.target.value })}
+                          onChange={(e) =>
+                            setNewCandidate({
+                              ...newCandidate,
+                              partyLogo: e.target.value,
+                            })
+                          }
                         />
                         <Button variant="outline" size="icon">
                           <Upload className="w-4 h-4" />
@@ -565,7 +691,12 @@ export default function CreateElection() {
                       id="bio"
                       placeholder="Brief background and qualifications..."
                       value={newCandidate.bio}
-                      onChange={(e) => setNewCandidate({ ...newCandidate, bio: e.target.value })}
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          bio: e.target.value,
+                        })
+                      }
                       rows={3}
                     />
                   </div>
@@ -578,7 +709,12 @@ export default function CreateElection() {
                       id="vision"
                       placeholder="Overall vision for the term..."
                       value={newCandidate.vision}
-                      onChange={(e) => setNewCandidate({ ...newCandidate, vision: e.target.value })}
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          vision: e.target.value,
+                        })
+                      }
                       rows={3}
                     />
                   </div>
@@ -593,17 +729,22 @@ export default function CreateElection() {
                           onChange={(e) => {
                             const newPolicies = [...newCandidate.policies];
                             newPolicies[index] = e.target.value;
-                            setNewCandidate({ ...newCandidate, policies: newPolicies });
+                            setNewCandidate({
+                              ...newCandidate,
+                              policies: newPolicies,
+                            });
                           }}
                         />
                         {index === newCandidate.policies.length - 1 && (
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setNewCandidate({ 
-                              ...newCandidate, 
-                              policies: [...newCandidate.policies, ''] 
-                            })}
+                            onClick={() =>
+                              setNewCandidate({
+                                ...newCandidate,
+                                policies: [...newCandidate.policies, ""],
+                              })
+                            }
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -622,17 +763,22 @@ export default function CreateElection() {
                           onChange={(e) => {
                             const newPromises = [...newCandidate.promises];
                             newPromises[index] = e.target.value;
-                            setNewCandidate({ ...newCandidate, promises: newPromises });
+                            setNewCandidate({
+                              ...newCandidate,
+                              promises: newPromises,
+                            });
                           }}
                         />
                         {index === newCandidate.promises.length - 1 && (
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setNewCandidate({ 
-                              ...newCandidate, 
-                              promises: [...newCandidate.promises, ''] 
-                            })}
+                            onClick={() =>
+                              setNewCandidate({
+                                ...newCandidate,
+                                promises: [...newCandidate.promises, ""],
+                              })
+                            }
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -643,7 +789,11 @@ export default function CreateElection() {
                 </TabsContent>
               </Tabs>
 
-              <Button variant="outline" onClick={handleAddCandidate} className="w-full">
+              <Button
+                variant="outline"
+                onClick={handleAddCandidate}
+                className="w-full"
+              >
                 <Plus className="w-4 h-4" />
                 Add Candidate
               </Button>
@@ -651,18 +801,26 @@ export default function CreateElection() {
 
             {candidates.length > 0 && (
               <div className="official-card p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">Added Candidates ({candidates.length})</h3>
+                <h3 className="font-semibold text-foreground">
+                  Added Candidates ({candidates.length})
+                </h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   {candidates.map((candidate, index) => (
                     <div key={index} className="candidate-card p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                            <span className="text-2xl">{candidate.symbol || '👤'}</span>
+                            <span className="text-2xl">
+                              {candidate.symbol || "👤"}
+                            </span>
                           </div>
                           <div>
-                            <p className="font-semibold text-foreground">{candidate.name}</p>
-                            <p className="text-sm text-muted-foreground">{candidate.party}</p>
+                            <p className="font-semibold text-foreground">
+                              {candidate.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {candidate.party}
+                            </p>
                           </div>
                         </div>
                         <Button
@@ -680,17 +838,25 @@ export default function CreateElection() {
             )}
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep('voters')}>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep("voters")}
+              >
                 Back
               </Button>
-              <Button 
-                variant="vote" 
+              <Button
+                variant="vote"
                 size="lg"
                 onClick={handleCreateElection}
-                disabled={!electionDetails.name || selectedVoters.length === 0 || candidates.length === 0 || isSubmitting}
+                disabled={
+                  !electionDetails.name ||
+                  selectedVoters.length === 0 ||
+                  candidates.length === 0 ||
+                  isSubmitting
+                }
               >
                 <Save className="w-4 h-4" />
-                {isSubmitting ? 'Creating Election...' : 'Create Election'}
+                {isSubmitting ? "Creating Election..." : "Create Election"}
               </Button>
             </div>
           </section>

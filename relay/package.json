@@ -1,0 +1,18 @@
+{
+  "name": "trustlessvote-relay",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node --env-file=.env ./src/server.mjs",
+    "start": "node ./src/server.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "fastify": "^4.26.2",
+    "fastify-cors": "^8.4.1",
+    "zod": "^3.23.8"
+  }
+}

@@ -1,23 +1,41 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, Calendar, Users, Vote, Trophy, 
-  Clock, CheckCircle2, XCircle, Eye, Search 
-} from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { getElectionWithPhases } from '@/services/elections.service';
-import { getCandidatesWithManifestos } from '@/services/candidates.service';
-import { addVoterToElection, getVotersWithProfiles } from '@/services/voters.service';
-import { searchProfiles } from '@/services/auth.service';
-import { ElectionWithPhases, CandidateWithManifesto, VoterWithProfile, Profile } from '@/types/supabase';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Layout } from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  Vote,
+  Trophy,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  Search,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { getElectionWithPhases } from "@/services/elections.service";
+import { getCandidatesWithManifestos } from "@/services/candidates.service";
+import {
+  addVoterToElection,
+  getVotersWithProfiles,
+} from "@/services/voters.service";
+import { searchProfiles } from "@/services/auth.service";
+import {
+  ElectionWithPhases,
+  CandidateWithManifesto,
+  VoterWithProfile,
+  Profile,
+} from "@/types/supabase";
 
-function deriveStatusFromPhases(election: ElectionWithPhases): 'upcoming' | 'ongoing' | 'completed' {
+function deriveStatusFromPhases(
+  election: ElectionWithPhases
+): "upcoming" | "ongoing" | "completed" {
   const phases = election.phases || [];
   if (!phases.length) {
-    return election.status as 'upcoming' | 'ongoing' | 'completed';
+    return election.status as "upcoming" | "ongoing" | "completed";
   }
 
   const now = new Date();
@@ -27,9 +45,9 @@ function deriveStatusFromPhases(election: ElectionWithPhases): 'upcoming' | 'ong
   const earliestStart = new Date(Math.min(...startTimes));
   const latestEnd = new Date(Math.max(...endTimes));
 
-  if (now < earliestStart) return 'upcoming';
-  if (now > latestEnd) return 'completed';
-  return 'ongoing';
+  if (now < earliestStart) return "upcoming";
+  if (now > latestEnd) return "completed";
+  return "ongoing";
 }
 
 export default function ElectionDetails() {
@@ -39,10 +57,11 @@ export default function ElectionDetails() {
   const [candidates, setCandidates] = useState<CandidateWithManifesto[]>([]);
   const [voters, setVoters] = useState<VoterWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [voterSearchTerm, setVoterSearchTerm] = useState('');
+  const [voterSearchTerm, setVoterSearchTerm] = useState("");
   const [voterSearchResults, setVoterSearchResults] = useState<Profile[]>([]);
   const [isSearchingVoters, setIsSearchingVoters] = useState(false);
   const [addingVoterId, setAddingVoterId] = useState<string | null>(null);
+  // Blockchain contract features removed
 
   useEffect(() => {
     if (electionId) {
@@ -59,7 +78,7 @@ export default function ElectionDetails() {
       // Load election with phases
       const electionData = await getElectionWithPhases(electionId);
       if (!electionData) {
-        toast.error('Election not found');
+        toast.error("Election not found");
         return;
       }
       setElection(electionData);
@@ -70,10 +89,11 @@ export default function ElectionDetails() {
 
       // Load voters with profiles
       const votersData = await getVotersWithProfiles(electionId);
+
       setVoters(votersData);
     } catch (error: any) {
-      console.error('Error loading election data:', error);
-      toast.error('Failed to load election details');
+      console.error("Error loading election data:", error);
+      toast.error("Failed to load election details");
     } finally {
       setIsLoading(false);
     }
@@ -93,15 +113,15 @@ export default function ElectionDetails() {
       // Allow both voter and admin profiles to be added as eligible voters
       const profiles = await searchProfiles(term);
       const alreadyAssignedIds = new Set(
-        voters
-          .map((v) => v.voter_id)
-          .filter((id): id is string => !!id)
+        voters.map((v) => v.voter_id).filter((id): id is string => !!id)
       );
 
-      setVoterSearchResults(profiles.filter((p) => !alreadyAssignedIds.has(p.id)));
+      setVoterSearchResults(
+        profiles.filter((p) => !alreadyAssignedIds.has(p.id))
+      );
     } catch (error: any) {
-      console.error('Error searching voters:', error);
-      toast.error('Failed to search voters');
+      console.error("Error searching voters:", error);
+      toast.error("Failed to search voters");
     } finally {
       setIsSearchingVoters(false);
     }
@@ -113,15 +133,15 @@ export default function ElectionDetails() {
     try {
       setAddingVoterId(profile.id);
       await addVoterToElection(electionId, profile.id, true);
-      toast.success('Voter added to election');
+      toast.success("Voter added to election");
       // Refresh voters list
       const updated = await getVotersWithProfiles(electionId);
       setVoters(updated);
       // Remove from search results
       setVoterSearchResults((prev) => prev.filter((p) => p.id !== profile.id));
     } catch (error: any) {
-      console.error('Error adding voter:', error);
-      toast.error(error.message || 'Failed to add voter');
+      console.error("Error adding voter:", error);
+      toast.error(error.message || "Failed to add voter");
     } finally {
       setAddingVoterId(null);
     }
@@ -158,8 +178,13 @@ export default function ElectionDetails() {
     return (
       <Layout showStepper={false} currentPhase="registration" isAdmin>
         <div className="max-w-4xl mx-auto text-center py-12">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Election Not Found</h1>
-          <Button variant="outline" onClick={() => navigate('/admin/dashboard')}>
+          <h1 className="text-2xl font-bold text-foreground mb-4">
+            Election Not Found
+          </h1>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/dashboard")}
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Button>
@@ -169,52 +194,86 @@ export default function ElectionDetails() {
   }
 
   const statusConfig = {
-    upcoming: { bg: 'bg-warning/10', text: 'text-warning', label: 'Upcoming', icon: Calendar },
-    ongoing: { bg: 'bg-accent/10', text: 'text-accent', label: 'Ongoing', icon: Clock },
-    completed: { bg: 'bg-success/10', text: 'text-success', label: 'Completed', icon: CheckCircle2 }
+    upcoming: {
+      bg: "bg-warning/10",
+      text: "text-warning",
+      label: "Upcoming",
+      icon: Calendar,
+    },
+    ongoing: {
+      bg: "bg-accent/10",
+      text: "text-accent",
+      label: "Ongoing",
+      icon: Clock,
+    },
+    completed: {
+      bg: "bg-success/10",
+      text: "text-success",
+      label: "Completed",
+      icon: CheckCircle2,
+    },
   };
 
   const derivedStatus = deriveStatusFromPhases(election);
   const config = statusConfig[derivedStatus];
   const StatusIcon = config.icon;
 
-  const activePhase = election.phases.find(p => p.is_active);
+  const activePhase = election.phases.find((p) => p.is_active);
 
   return (
     <Layout showStepper={false} currentPhase="registration" isAdmin>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <section className="flex items-center gap-4 animate-fade-up">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/admin/dashboard")}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold text-foreground">{election.name}</h1>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${config.bg} ${config.text}`}>
+              <h1 className="text-3xl font-bold text-foreground">
+                {election.name}
+              </h1>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${config.bg} ${config.text}`}
+              >
                 <StatusIcon className="w-3 h-3" />
                 {config.label}
               </span>
             </div>
-            <p className="text-muted-foreground">{election.description || 'No description provided'}</p>
+            <p className="text-muted-foreground">
+              {election.description || "No description provided"}
+            </p>
           </div>
         </section>
 
         {/* Statistics */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-up" style={{ animationDelay: '100ms' }}>
+        <section
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-up"
+          style={{ animationDelay: "100ms" }}
+        >
           <div className="official-card p-4 text-center">
             <Users className="w-5 h-5 mx-auto text-muted-foreground mb-2" />
-            <p className="text-2xl font-bold text-foreground">{voters.length}</p>
+            <p className="text-2xl font-bold text-foreground">
+              {voters.length}
+            </p>
             <p className="text-sm text-muted-foreground">Voters</p>
           </div>
           <div className="official-card p-4 text-center">
             <Vote className="w-5 h-5 mx-auto text-muted-foreground mb-2" />
-            <p className="text-2xl font-bold text-foreground">{candidates.length}</p>
+            <p className="text-2xl font-bold text-foreground">
+              {candidates.length}
+            </p>
             <p className="text-sm text-muted-foreground">Candidates</p>
           </div>
           <div className="official-card p-4 text-center">
             <CheckCircle2 className="w-5 h-5 mx-auto text-muted-foreground mb-2" />
-            <p className="text-2xl font-bold text-foreground capitalize">{activePhase?.phase || 'N/A'}</p>
+            <p className="text-2xl font-bold text-foreground capitalize">
+              {activePhase?.phase || "N/A"}
+            </p>
             <p className="text-sm text-muted-foreground">Current Phase</p>
           </div>
           <div className="official-card p-4 text-center">
@@ -226,23 +285,34 @@ export default function ElectionDetails() {
           </div>
         </section>
 
+        {/* Contract address display removed */}
+
         {/* Winner Card (if completed) */}
-        {election.status === 'completed' && candidates.length > 0 && (
-          <section className="official-card p-6 border-2 border-success animate-fade-up" style={{ animationDelay: '150ms' }}>
+        {election.status === "completed" && candidates.length > 0 && (
+          <section
+            className="official-card p-6 border-2 border-success animate-fade-up"
+            style={{ animationDelay: "150ms" }}
+          >
             <div className="flex items-center gap-3 mb-4">
               <Trophy className="w-6 h-6 text-success" />
-              <h2 className="text-xl font-semibold text-foreground">Election Winner</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                Election Winner
+              </h2>
             </div>
-            
+
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 rounded-2xl bg-success/10 flex items-center justify-center">
-                <span className="text-4xl">{candidates[0].symbol || '👤'}</span>
+                <span className="text-4xl">{candidates[0].symbol || "👤"}</span>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-2xl font-bold text-foreground">{candidates[0].name}</h3>
-                <p className="text-muted-foreground mb-3">{candidates[0].party_name}</p>
-                
+                <h3 className="text-2xl font-bold text-foreground">
+                  {candidates[0].name}
+                </h3>
+                <p className="text-muted-foreground mb-3">
+                  {candidates[0].party_name}
+                </p>
+
                 <div className="flex items-center gap-6">
                   <div>
                     <p className="text-3xl font-bold text-success">TBD</p>
@@ -260,10 +330,15 @@ export default function ElectionDetails() {
         )}
 
         {/* Tabs */}
-        <section className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+        <section
+          className="animate-fade-up"
+          style={{ animationDelay: "200ms" }}
+        >
           <Tabs defaultValue="candidates" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="candidates">Candidates ({candidates.length})</TabsTrigger>
+              <TabsTrigger value="candidates">
+                Candidates ({candidates.length})
+              </TabsTrigger>
               <TabsTrigger value="voters">Voters ({voters.length})</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
@@ -272,21 +347,29 @@ export default function ElectionDetails() {
               {candidates.length === 0 ? (
                 <div className="official-card p-8 text-center">
                   <Vote className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No candidates added yet</p>
+                  <p className="text-muted-foreground">
+                    No candidates added yet
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {candidates.map(candidate => (
+                  {candidates.map((candidate) => (
                     <div key={candidate.id} className="official-card p-6">
                       <div className="flex items-start gap-4">
                         <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center text-3xl">
-                          {candidate.symbol || '👤'}
+                          {candidate.symbol || "👤"}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-foreground">{candidate.name}</h3>
-                          <p className="text-sm text-muted-foreground mb-2">{candidate.party_name}</p>
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {candidate.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {candidate.party_name}
+                          </p>
                           {candidate.biography && (
-                            <p className="text-sm text-muted-foreground">{candidate.biography}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {candidate.biography}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -306,7 +389,8 @@ export default function ElectionDetails() {
                       Add voters to this election
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Search verified voter profiles by name or email and assign them to this election.
+                      Search verified voter profiles by name or email and assign
+                      them to this election.
                     </p>
                   </div>
                   <div className="flex-1 flex gap-2">
@@ -327,7 +411,9 @@ export default function ElectionDetails() {
                         className="flex items-center justify-between p-3 bg-muted rounded-lg"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate">{profile.full_name}</p>
+                          <p className="font-medium text-foreground truncate">
+                            {profile.full_name}
+                          </p>
                         </div>
                         <Button
                           type="button"
@@ -335,7 +421,9 @@ export default function ElectionDetails() {
                           onClick={() => handleAddVoter(profile)}
                           disabled={addingVoterId === profile.id}
                         >
-                          {addingVoterId === profile.id ? 'Adding...' : 'Add to election'}
+                          {addingVoterId === profile.id
+                            ? "Adding..."
+                            : "Add to election"}
                         </Button>
                       </div>
                     ))}
@@ -353,25 +441,42 @@ export default function ElectionDetails() {
               {voters.length === 0 ? (
                 <div className="official-card p-8 text-center">
                   <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No voters registered yet</p>
+                  <p className="text-muted-foreground">
+                    No voters registered yet
+                  </p>
                 </div>
               ) : (
                 <div className="official-card p-6">
                   <div className="space-y-3">
                     {voters.map((voter) => (
-                      <div key={voter.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div
+                        key={voter.id}
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      >
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{voter.profile?.full_name || 'Unknown'}</p>
+                          <p className="font-medium text-foreground">
+                            {voter.profile?.full_name || "Unknown"}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {voter.profile?.email || 'No email'}
+                            {voter.profile?.email || "No email"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {voter.is_eligible && <CheckCircle2 className="w-4 h-4 text-success" />}
-                          {voter.has_committed && <Eye className="w-4 h-4 text-accent" />}
-                          {voter.has_revealed && <CheckCircle2 className="w-4 h-4 text-success" />}
+                          {voter.is_eligible && (
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          )}
+                          {voter.has_committed && (
+                            <Eye className="w-4 h-4 text-accent" />
+                          )}
+                          {voter.has_revealed && (
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          )}
                           <span className="text-sm capitalize text-muted-foreground">
-                            {voter.has_revealed ? 'Revealed' : voter.has_committed ? 'Committed' : 'Eligible'}
+                            {voter.has_revealed
+                              ? "Revealed"
+                              : voter.has_committed
+                              ? "Committed"
+                              : "Eligible"}
                           </span>
                         </div>
                       </div>
@@ -383,16 +488,23 @@ export default function ElectionDetails() {
 
             <TabsContent value="timeline" className="mt-6">
               <div className="official-card p-6 space-y-4">
-                <h3 className="font-semibold text-foreground mb-4">Election Timeline</h3>
-                
+                <h3 className="font-semibold text-foreground mb-4">
+                  Election Timeline
+                </h3>
+
                 <div className="space-y-3">
                   {election.phases && election.phases.length > 0 ? (
                     election.phases.map((phase) => (
-                      <div key={phase.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div
+                        key={phase.id}
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      >
                         <div>
-                          <p className="font-medium text-foreground capitalize">{phase.phase} Phase</p>
+                          <p className="font-medium text-foreground capitalize">
+                            {phase.phase} Phase
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {phase.is_active ? 'Currently active' : 'Scheduled'}
+                            {phase.is_active ? "Currently active" : "Scheduled"}
                           </p>
                         </div>
                         <div className="text-right">
@@ -406,7 +518,9 @@ export default function ElectionDetails() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-center py-4">No phases configured</p>
+                    <p className="text-muted-foreground text-center py-4">
+                      No phases configured
+                    </p>
                   )}
                 </div>
               </div>

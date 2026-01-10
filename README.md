@@ -4,15 +4,14 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-## Local development (Docker)
+## Local development
 
-Bring up the full local stack (frontend + local chain + local Supabase-like backend) with:
+Run the frontend using Supabase (no Express/blockchain):
 
 ```sh
-docker compose up -d --build
+npm i
+npm run dev
 ```
-
-Details and default seeded accounts are in [DOCKER_DEV.md](DOCKER_DEV.md).
 
 ## How can I edit this code?
 
@@ -72,7 +71,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Deploy the static frontend (e.g., Vercel/Netlify). Configure Supabase env vars.
 
 ## Can I connect a custom domain to my Lovable project?
 
