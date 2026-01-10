@@ -16,11 +16,6 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getElectionsForVoter } from "@/services/voters.service";
 import { getElectionWithPhases } from "@/services/elections.service";
 import { Profile, ElectionWithPhases } from "@/types/supabase";
-import {
-  connectMetaMask,
-  getWalletAddress,
-  isWalletConnected,
-} from "@/services/blockchain.service";
 
 type ElectionPhase = "registration" | "commit" | "reveal" | "results";
 
@@ -160,38 +155,12 @@ export default function VoterDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [elections, setElections] = useState<ElectionWithPhases[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  // Wallet features removed
 
   useEffect(() => {
     loadVoterData();
-    checkWalletConnection();
+    // Wallet features removed
   }, []);
-
-  const checkWalletConnection = () => {
-    if (isWalletConnected()) {
-      const address = getWalletAddress();
-      setWalletAddress(address);
-    }
-  };
-
-  const handleConnectWallet = async () => {
-    try {
-      setIsConnectingWallet(true);
-      const address = await connectMetaMask();
-      setWalletAddress(address);
-      toast.success(
-        `Wallet connected: ${address.substring(0, 6)}...${address.substring(
-          38
-        )}`
-      );
-    } catch (error: any) {
-      console.error("MetaMask connection error:", error);
-      toast.error(error.message || "Failed to connect MetaMask");
-    } finally {
-      setIsConnectingWallet(false);
-    }
-  };
 
   const loadVoterData = async () => {
     try {
@@ -336,50 +305,7 @@ export default function VoterDashboard() {
               </Button>
             </div>
 
-            {/* MetaMask connect card */}
-            {!walletAddress ? (
-              <div className="secure-zone p-4 relative z-10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-card/80 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Connect MetaMask
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Link your wallet to sign and verify on-chain actions.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="vote"
-                  size="sm"
-                  onClick={handleConnectWallet}
-                  disabled={isConnectingWallet}
-                >
-                  {isConnectingWallet ? "Connecting..." : "Connect"}
-                </Button>
-              </div>
-            ) : (
-              <div className="secure-zone p-4 relative z-10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-card/80 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Wallet Connected
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {walletAddress.substring(0, 6)}...
-                      {walletAddress.substring(38)}
-                    </p>
-                  </div>
-                </div>
-                <Check className="w-5 h-5 text-success" />
-              </div>
-            )}
+            {/* Wallet features removed */}
           </div>
         </section>
 

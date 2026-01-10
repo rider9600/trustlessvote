@@ -32,13 +32,9 @@ import {
 } from "@/types/supabase";
 import type { Candidate as UICandidate } from "@/types/election";
 import { ProcessContent } from "./Process";
-import {
-  connectMetaMask,
-  commitVoteOnChain,
-  revealVoteOnChain,
-  getWalletAddress,
-  isWalletConnected,
-} from "@/services/blockchain.service";
+import { relay } from "@/lib/relay";
+import { commitmentHash } from "@/lib/hash";
+// Blockchain interactions removed
 
 type TimelineStatus = "upcoming" | "ongoing" | "past";
 
@@ -219,42 +215,15 @@ export default function VoterElection() {
   const [secretKey, setSecretKey] = useState("");
   const [isCommitting, setIsCommitting] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  // Wallet state removed
 
   useEffect(() => {
     loadData();
-    checkWalletConnection();
+    // Wallet features removed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [electionId]);
 
-  const checkWalletConnection = () => {
-    if (isWalletConnected()) {
-      const address = getWalletAddress();
-      setWalletAddress(address);
-    }
-  };
-
-  const handleConnectWallet = async () => {
-    console.log("Connect wallet button clicked");
-    try {
-      setIsConnectingWallet(true);
-      console.log("Calling connectMetaMask...");
-      const address = await connectMetaMask();
-      console.log("Wallet connected:", address);
-      setWalletAddress(address);
-      toast.success(
-        `Wallet connected: ${address.substring(0, 6)}...${address.substring(
-          38
-        )}`
-      );
-    } catch (error: any) {
-      console.error("MetaMask connection error:", error);
-      toast.error(error.message || "Failed to connect MetaMask");
-    } finally {
-      setIsConnectingWallet(false);
-    }
-  };
+  // Wallet handlers removed
 
   const loadData = async () => {
     try {
@@ -365,12 +334,6 @@ export default function VoterElection() {
   }, [candidates]);
 
   const handleCommit = async () => {
-    // Check wallet connection
-    if (!walletAddress) {
-      toast.error("Please connect your MetaMask wallet first");
-      return;
-    }
-
     if (!selectedCandidate) {
       toast.error("Please select a candidate");
       return;
@@ -383,33 +346,36 @@ export default function VoterElection() {
     try {
       setIsCommitting(true);
 
-      toast.loading("Committing vote to blockchain...", { id: "commit-tx" });
+      toast.loading("Submitting commit...", { id: "commit-tx" });
+      const profile = voter as Profile; // already loaded
+      let txHash = "";
 
-      // Commit vote to blockchain
-      const txHash = await commitVoteOnChain(
-        electionId,
-        selectedCandidate,
-        secretKey
-      );
-
-      toast.success("Transaction confirmed!", { id: "commit-tx" });
+      // Prefer client-side commitment to keep secret private during commit
+      const commitment = commitmentHash(selectedCandidate, secretKey);
+      try {
+        const res = await relay.commit(electionId!, profile.id, commitment);
+        txHash = res?.txHash || "";
+      } catch (e: any) {
+        console.error("Relay commit failed:", e?.message || e);
+        throw new Error(e?.message || "Commit failed on chain");
+      }
 
       // Store locally for convenience (user can also use their own record)
       const commitKey = `tvote_commit_${electionId}_${voterStatus.voter_id}`;
-      const commitment = {
+      const commitRecord = {
         candidateId: selectedCandidate,
         secretKey,
         txHash,
       };
-      localStorage.setItem(commitKey, JSON.stringify(commitment));
+      localStorage.setItem(commitKey, JSON.stringify(commitRecord));
 
       // Update Supabase status
       await updateVoterStatus(voterStatus.id, { has_committed: true });
 
-      toast.success(
-        `Vote committed successfully! TX: ${txHash.substring(0, 10)}...`,
-        { duration: 5000 }
-      );
+      toast.success(`Vote committed successfully!`, {
+        duration: 3000,
+        id: "commit-tx",
+      });
 
       // Clear form
       setSelectedCandidate(null);
@@ -429,12 +395,6 @@ export default function VoterElection() {
   const handleReveal = async () => {
     if (!secretKey.trim()) {
       toast.error("Please enter a secret key");
-      return;
-    }
-
-    // Check wallet connection
-    if (!walletAddress) {
-      toast.error("Please connect your MetaMask wallet first");
       return;
     }
 
@@ -472,24 +432,22 @@ export default function VoterElection() {
         return;
       }
 
-      toast.loading("Revealing vote on blockchain...", { id: "reveal-tx" });
-
-      // Reveal vote on blockchain
-      const txHash = await revealVoteOnChain(
-        electionId,
-        candidateId,
-        secretKey
-      );
-
-      toast.success("Transaction confirmed!", { id: "reveal-tx" });
+      toast.loading("Submitting reveal...", { id: "reveal-tx" });
+      const profile = voter as Profile;
+      try {
+        await relay.reveal(electionId!, profile.id, candidateId, secretKey);
+      } catch (e: any) {
+        console.error("Relay reveal failed:", e?.message || e);
+        throw new Error(e?.message || "Reveal failed on chain");
+      }
 
       // Update Supabase status
       await updateVoterStatus(voterStatus.id, { has_revealed: true });
 
-      toast.success(
-        `Vote revealed successfully! TX: ${txHash.substring(0, 10)}...`,
-        { duration: 5000 }
-      );
+      toast.success(`Vote revealed successfully!`, {
+        duration: 3000,
+        id: "reveal-tx",
+      });
 
       // Clear form
       setSecretKey("");
@@ -597,59 +555,7 @@ export default function VoterElection() {
           </div>
         </section>
 
-        {/* MetaMask Connection Card - Always visible at top */}
-        {!walletAddress ? (
-          <div
-            className="secure-zone p-6 animate-fade-up"
-            style={{ animationDelay: "60ms" }}
-          >
-            <div className="relative z-10 space-y-4 text-center">
-              <div className="flex justify-center">
-                <Wallet className="w-12 h-12 text-accent" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Connect Your Wallet
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  To commit or reveal votes, you need to connect your MetaMask
-                  wallet to interact with the blockchain.
-                </p>
-              </div>
-              <Button
-                variant="official"
-                size="lg"
-                onClick={handleConnectWallet}
-                disabled={isConnectingWallet}
-                className="mx-auto"
-              >
-                <Wallet className="w-4 h-4" />
-                {isConnectingWallet ? "Connecting..." : "Connect MetaMask"}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="secure-zone p-4 animate-fade-up"
-            style={{ animationDelay: "60ms" }}
-          >
-            <div className="relative z-10 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Wallet className="w-5 h-5 text-success" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Wallet Connected
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {walletAddress.substring(0, 6)}...
-                    {walletAddress.substring(38)}
-                  </p>
-                </div>
-              </div>
-              <Check className="w-5 h-5 text-success" />
-            </div>
-          </div>
-        )}
+        {/* Wallet connection UI removed */}
 
         {/* Hero / election name + cast your vote copy */}
         <section
@@ -819,22 +725,17 @@ export default function VoterElection() {
                   size="lg"
                   className="w-full"
                   onClick={handleCommit}
-                  disabled={isCommitting || !walletAddress}
+                  disabled={isCommitting}
                 >
                   {isCommitting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Committing to blockchain...
-                    </>
-                  ) : !walletAddress ? (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      Connect Wallet to Commit
+                      Recording commit...
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4" />
-                      Commit Vote to Blockchain
+                      Commit Vote
                     </>
                   )}
                 </Button>
@@ -872,22 +773,17 @@ export default function VoterElection() {
                   size="lg"
                   className="w-full"
                   onClick={handleReveal}
-                  disabled={isRevealing || !walletAddress}
+                  disabled={isRevealing}
                 >
                   {isRevealing ? (
                     <>
                       <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
-                      Revealing on blockchain...
-                    </>
-                  ) : !walletAddress ? (
-                    <>
-                      <Eye className="w-4 h-4" />
-                      Connect Wallet to Reveal
+                      Recording reveal...
                     </>
                   ) : (
                     <>
                       <Eye className="w-4 h-4" />
-                      Reveal Vote on Blockchain
+                      Reveal Vote
                     </>
                   )}
                 </Button>

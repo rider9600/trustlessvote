@@ -1,24 +1,29 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Shield, UserCheck, KeyRound } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { signIn, getCurrentProfile } from '@/services/auth.service';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Lock, Shield, UserCheck, KeyRound } from "lucide-react";
+import { Layout } from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { signIn, getCurrentProfile } from "@/services/auth.service";
+
+// Dev-only: surface env to help diagnose connectivity
+const DEV_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as
+  | string
+  | undefined;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [voterEmail, setVoterEmail] = useState('');
-  const [voterPassword, setVoterPassword] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [voterEmail, setVoterEmail] = useState("");
+  const [voterPassword, setVoterPassword] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleVoterLogin = async () => {
     if (!voterEmail || !voterPassword) {
-      toast.error('Please enter both email and password');
+      toast.error("Please enter both email and password");
       return;
     }
 
@@ -28,21 +33,21 @@ export default function LoginPage() {
       const profile = await getCurrentProfile();
 
       if (!profile) {
-        toast.error('Profile not found');
+        toast.error("Profile not found");
         return;
       }
 
       // Allow both voter and admin roles to access the voter portal
-      if (profile.role !== 'voter' && profile.role !== 'admin') {
-        toast.error('This account is not allowed in the voter portal');
+      if (profile.role !== "voter" && profile.role !== "admin") {
+        toast.error("This account is not allowed in the voter portal");
         return;
       }
 
-      toast.success('Login successful!');
-      navigate('/voter');
+      toast.success("Login successful!");
+      navigate("/voter");
     } catch (error: any) {
-      console.error('Voter login error:', error);
-      toast.error(error.message || 'Invalid credentials');
+      console.error("Voter login error:", error);
+      toast.error(error.message || "Invalid credentials");
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +55,7 @@ export default function LoginPage() {
 
   const handleAdminLogin = async () => {
     if (!adminEmail || !adminPassword) {
-      toast.error('Please enter both email and password');
+      toast.error("Please enter both email and password");
       return;
     }
 
@@ -60,27 +65,32 @@ export default function LoginPage() {
       const profile = await getCurrentProfile();
 
       if (!profile) {
-        toast.error('Profile not found');
+        toast.error("Profile not found");
         return;
       }
 
-      if (profile.role !== 'admin') {
-        toast.error('This account is not an admin account');
+      if (profile.role !== "admin") {
+        toast.error("This account is not an admin account");
         return;
       }
 
-      toast.success('Admin login successful!');
-      navigate('/admin/dashboard');
+      toast.success("Admin login successful!");
+      navigate("/admin/dashboard");
     } catch (error: any) {
-      console.error('Admin login error:', error);
-      toast.error(error.message || 'Invalid credentials');
+      console.error("Admin login error:", error);
+      toast.error(error.message || "Invalid credentials");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Layout showStepper={false} currentPhase="registration" isAdmin={false} minimalNav>
+    <Layout
+      showStepper={false}
+      currentPhase="registration"
+      isAdmin={false}
+      minimalNav
+    >
       <div className="min-h-[70vh] lg:min-h-[68vh] grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
         {/* Voter Side */}
         <section className="secure-zone p-6 md:p-8 flex flex-col justify-between">
@@ -95,7 +105,8 @@ export default function LoginPage() {
                 Sign in as Voter
               </h1>
               <p className="text-sm md:text-base text-muted-foreground max-w-md">
-                Use your registered email address and password to access the voter portal.
+                Use your registered email address and password to access the
+                voter portal.
               </p>
             </div>
 
@@ -119,7 +130,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={voterPassword}
                   onChange={(e) => setVoterPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleVoterLogin()}
+                  onKeyPress={(e) => e.key === "Enter" && handleVoterLogin()}
                 />
               </div>
 
@@ -132,7 +143,7 @@ export default function LoginPage() {
                   disabled={isLoading}
                 >
                   <Lock className="w-4 h-4" />
-                  {isLoading ? 'Signing in...' : 'Sign in as Voter'}
+                  {isLoading ? "Signing in..." : "Sign in as Voter"}
                 </Button>
 
                 <Button
@@ -141,22 +152,25 @@ export default function LoginPage() {
                   className="w-full sm:w-auto"
                   asChild
                 >
-                  <Link to="/signup">
-                    Create account
-                  </Link>
+                  <Link to="/signup">Create account</Link>
                 </Button>
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                By continuing, you confirm that you are an eligible voter in this election and agree to
-                the official terms and privacy policy.
+                By continuing, you confirm that you are an eligible voter in
+                this election and agree to the official terms and privacy
+                policy.
               </p>
             </div>
           </div>
 
           <div className="relative z-10 mt-6 border-t border-border pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted-foreground">
-            <span>Voter login is secured using institutional-grade encryption.</span>
-            <span className="hidden sm:inline">Do not share your credentials with anyone.</span>
+            <span>
+              Voter login is secured using institutional-grade encryption.
+            </span>
+            <span className="hidden sm:inline">
+              Do not share your credentials with anyone.
+            </span>
           </div>
         </section>
 
@@ -173,7 +187,8 @@ export default function LoginPage() {
                 Administrator Login
               </h2>
               <p className="text-sm md:text-base text-muted-foreground max-w-md">
-                Access election controls, approve voters, and manage phases from a verified admin account.
+                Access election controls, approve voters, and manage phases from
+                a verified admin account.
               </p>
             </div>
 
@@ -196,20 +211,20 @@ export default function LoginPage() {
                   placeholder="Enter admin's password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+                  onKeyPress={(e) => e.key === "Enter" && handleAdminLogin()}
                 />
               </div>
 
               <div className="space-y-3 pt-2">
-                <Button 
-                  variant="official" 
-                  size="lg" 
+                <Button
+                  variant="official"
+                  size="lg"
                   className="w-full"
                   onClick={handleAdminLogin}
                   disabled={isLoading}
                 >
                   <KeyRound className="w-4 h-4" />
-                  {isLoading ? 'Signing in...' : 'Sign in to Admin Dashboard'}
+                  {isLoading ? "Signing in..." : "Sign in to Admin Dashboard"}
                 </Button>
               </div>
             </div>
@@ -222,9 +237,19 @@ export default function LoginPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <span>On‑chain auditability</span>
-              <span className="hidden md:inline">Role‑based access • Multi-factor ready</span>
+              <span className="hidden md:inline">
+                Role‑based access • Multi-factor ready
+              </span>
             </div>
           </div>
+          {import.meta.env.DEV && (
+            <div className="mt-4 text-xs text-muted-foreground">
+              <div>
+                Dev: Supabase URL detected:{" "}
+                {String(DEV_SUPABASE_URL || "undefined")}
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </Layout>

@@ -85,33 +85,10 @@ services:
       - "8000:8000"
 
   # ---------- Hardhat local chain ----------
-  hardhat:
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile.node
-    container_name: trustlessvote-hardhat
-    restart: unless-stopped
-    working_dir: /app
-    command: sh -c "npm ci || npm install; npx hardhat node --hostname 0.0.0.0"
-    ports:
-      - "8545:8545"
-    volumes:
-      - ./:/app
-      - /app/node_modules
+  # (Removed) Hardhat local chain
 
   # Deploy contract once (idempotent enough for fresh node)
-  deploy:
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile.node
-    container_name: trustlessvote-deploy
-    working_dir: /app
-    depends_on:
-      - hardhat
-    command: sh -c "npm ci || npm install; npx hardhat compile; node scripts/deploy-ethers.mjs"
-    volumes:
-      - ./:/app
-      - /app/node_modules
+  # (Removed) Contract deployer
 
   # ---------- Seed: create 1 admin + 19 voters ----------
   seed:
@@ -131,6 +108,8 @@ services:
       - ./:/app
       - /app/node_modules
 
+  # (Removed) Local API (Express + Postgres)
+
   # ---------- Frontend (Vite) ----------
   frontend:
     build:
@@ -146,8 +125,6 @@ services:
       HOST: 0.0.0.0
     depends_on:
       - proxy
-      - hardhat
-      - deploy
       - seed
     command: sh -c "npm ci || npm install; npm run dev -- --host 0.0.0.0 --port 5173"
     ports:
